@@ -1,5 +1,6 @@
 {
     "hosting": {
+        "site": "mascot-bracket",
         "public": "dist",
         "ignore": [
             "firebase.json",

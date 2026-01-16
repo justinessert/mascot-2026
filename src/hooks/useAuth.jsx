@@ -9,7 +9,8 @@ import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut,
-    updateProfile
+    updateProfile,
+    sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
@@ -54,12 +55,18 @@ export function AuthProvider({ children }) {
         return signOut(auth);
     };
 
+    // Send password reset email
+    const resetPassword = async (email) => {
+        return sendPasswordResetEmail(auth, email);
+    };
+
     const value = {
         user,
         loading,
         login,
         signup,
         logout,
+        resetPassword,
         isAuthenticated: !!user
     };
 

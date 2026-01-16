@@ -41,6 +41,18 @@
     font-size: 0.9rem;
 }
 
+/* Success message styling */
+.auth-success {
+    background: rgba(40, 167, 69, 0.2);
+    border: 1px solid #28a745;
+    color: #51cf66;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
 /* Form layout */
 .auth-form {
     display: flex;

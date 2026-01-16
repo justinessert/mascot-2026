@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
+import PasswordInput from '../components/PasswordInput';
 import './Auth.css';
 
 function Signup() {
@@ -108,29 +109,23 @@ function Signup() {
                         />
                     </div>
 
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="At least 6 characters"
-                            disabled={loading}
-                        />
-                    </div>
+                    <PasswordInput
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="At least 6 characters"
+                        disabled={loading}
+                        label="Password"
+                    />
 
-                    <div className="form-group">
-                        <label htmlFor="confirmPassword">Confirm Password</label>
-                        <input
-                            type="password"
-                            id="confirmPassword"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="Type password again"
-                            disabled={loading}
-                        />
-                    </div>
+                    <PasswordInput
+                        id="confirmPassword"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Type password again"
+                        disabled={loading}
+                        label="Confirm Password"
+                    />
 
                     <button type="submit" className="auth-button" disabled={loading}>
                         {loading ? 'Creating account...' : 'Create Account'}

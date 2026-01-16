@@ -5,6 +5,8 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Leaderboard from './pages/Leaderboard';
 import Info from './pages/Info';
 import WinnerSelection from './pages/WinnerSelection';
@@ -23,6 +25,8 @@ function App() {
           <Route index element={<Home />} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
+          <Route path="forgot-password" element={<ForgotPassword />} />
+          <Route path="reset-password" element={<ResetPassword />} />
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="info" element={<Info />} />
 

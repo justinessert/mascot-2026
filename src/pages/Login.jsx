@@ -21,6 +21,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
+import PasswordInput from '../components/PasswordInput';
 import './Auth.css';
 
 function Login() {
@@ -149,18 +150,15 @@ function Login() {
                         />
                     </div>
 
-                    {/* CONTROLLED INPUT - Password */}
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Your password"
-                            disabled={loading}
-                        />
-                    </div>
+                    {/* CONTROLLED INPUT - Password with visibility toggle */}
+                    <PasswordInput
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Your password"
+                        disabled={loading}
+                        label="Password"
+                    />
 
                     {/* Submit button - disabled while loading */}
                     <button type="submit" className="auth-button" disabled={loading}>
@@ -172,6 +170,9 @@ function Login() {
                 {/* Link is from React Router - it navigates without page refresh */}
                 <p className="auth-switch">
                     Don't have an account? <Link to="/signup">Sign up</Link>
+                </p>
+                <p className="auth-switch">
+                    <Link to="/forgot-password">Forgot your password?</Link>
                 </p>
             </div>
         </div>

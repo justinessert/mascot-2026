@@ -152,7 +152,7 @@
         align-items: center;
     }
 
-    .final-four-section {
+    .bracket-center {
         order: -1;
     }
 
@@ -174,4 +174,48 @@
     .region-wrapper h3 {
         font-size: 0.95rem;
     }
+}
+
+/* Shared Bracket Header */
+.shared-bracket-header {
+    text-align: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.shared-bracket-header h2 {
+    margin-bottom: 4px;
+}
+
+.shared-bracket-header .bracket-owner {
+    color: var(--secondary-text);
+    margin-bottom: 12px;
+}
+
+.shared-bracket-header .back-link,
+.bracket-error .back-link {
+    color: var(--accent-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.shared-bracket-header .back-link:hover,
+.bracket-error .back-link:hover {
+    text-decoration: underline;
+}
+
+/* Bracket Error State */
+.bracket-error {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.bracket-error h2 {
+    margin-bottom: 8px;
+}
+
+.bracket-error p {
+    color: var(--secondary-text);
+    margin-bottom: 20px;
 }

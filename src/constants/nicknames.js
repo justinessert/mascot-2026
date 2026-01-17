@@ -181,7 +181,11 @@ export const nicknames = {
  * @returns {string} The mascot nickname or the original key if not found
  */
 export function getMascotName(teamKey) {
-    return nicknames[teamKey] || teamKey.replace(/_/g, ' ');
+    const rawName = nicknames[teamKey] || teamKey.replace(/_/g, ' ');
+    return rawName
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
 }
 
 /**

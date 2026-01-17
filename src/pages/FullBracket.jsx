@@ -10,10 +10,8 @@ import { useYear } from '../hooks/useYear.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { formatTeamName, getMascotName } from '../constants/nicknames';
 import { initializeBracket, loadBracket, Region } from '../services/bracketService';
-import BracketSegment from '../components/BracketSegment';
-import Matchup from '../components/Matchup';
 import ComingSoon from '../components/ComingSoon';
-import { regionOrder } from '../constants/bracketData';
+import FullBracketDisplay from '../components/FullBracketDisplay';
 import './FullBracket.css';
 
 // Session storage key (same as WinnerSelection)
@@ -98,35 +96,7 @@ function FullBracket() {
         setLoading(false);
     };
 
-    // Get region bracket data
-    const getRegionBracket = (regionName) => {
-        return regions[regionName]?.bracket || [];
-    };
 
-    // Get the final four matchups
-    const getFinalFourMatchups = () => {
-        const finalFour = regions.final_four;
-        if (!finalFour || !finalFour.bracket || !finalFour.bracket[0]) {
-            return [];
-        }
-
-        const bracket = finalFour.bracket;
-        const semiFinalLeft = [bracket[0][0], bracket[0][1]];
-        const semiFinalRight = [bracket[0][2], bracket[0][3]];
-        const final = bracket[1] ? [bracket[1][0], bracket[1][1]] : [null, null];
-
-        return [semiFinalLeft, final, semiFinalRight];
-    };
-
-    // Get champion
-    const getChampion = () => {
-        return regions.final_four?.getChampion?.() || null;
-    };
-
-    // Get left and right regions based on year's order
-    const order = regionOrder[selectedYear] || regionOrder[2025];
-    const leftRegions = [order[0], order[3]];
-    const rightRegions = [order[1], order[2]];
 
     if (loading) {
         return (
@@ -141,86 +111,19 @@ function FullBracket() {
         return <ComingSoon year={selectedYear} />;
     }
 
-    const champion = getChampion();
-    const finalFourMatchups = getFinalFourMatchups();
-
     return (
-        <div className="full-bracket-container">
-            <h2>
-                {bracketName ? `${bracketName}` : `${selectedYear} Bracket`}
-            </h2>
-
-            <div className="bracket-layout">
-                {/* Left side - Two regions */}
-                <div className="bracket-side left-side">
-                    <div className="region-wrapper">
-                        <h3>{formatTeamName(leftRegions[0])} Region</h3>
-                        <BracketSegment
-                            bracket={getRegionBracket(leftRegions[0])}
-                            reverseOrder={false}
-                        />
-                    </div>
-                    <div className="region-wrapper">
-                        <h3>{formatTeamName(leftRegions[1])} Region</h3>
-                        <BracketSegment
-                            bracket={getRegionBracket(leftRegions[1])}
-                            reverseOrder={false}
-                        />
-                    </div>
-                </div>
-
-                {/* Center - Final Four */}
-                <div className="final-four-section">
-                    {champion && (
-                        <div className="champion-display">
-                            <h3>🏆 Champion</h3>
-                            {champion.image && (
-                                <img src={champion.image} alt={champion.name} className="champion-image" />
-                            )}
-                            <p className="champion-name">{formatTeamName(champion.name)}</p>
-                            <p className="champion-mascot">{getMascotName(champion.name)}</p>
-                        </div>
-                    )}
-
-                    <h3>Final Four</h3>
-
-                    <div className="final-four-matchups">
-                        {finalFourMatchups.map((matchup, index) => (
-                            <div key={index} className={`ff-matchup ${index === 1 ? 'championship' : 'semifinal'}`}>
-                                <span className="ff-label">
-                                    {index === 0 ? 'Semifinal' : index === 1 ? 'Championship' : 'Semifinal'}
-                                </span>
-                                <Matchup topTeam={matchup[0]} bottomTeam={matchup[1]} />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Right side - Two regions (reversed) */}
-                <div className="bracket-side right-side">
-                    <div className="region-wrapper">
-                        <h3>{formatTeamName(rightRegions[0])} Region</h3>
-                        <BracketSegment
-                            bracket={getRegionBracket(rightRegions[0])}
-                            reverseOrder={true}
-                        />
-                    </div>
-                    <div className="region-wrapper">
-                        <h3>{formatTeamName(rightRegions[1])} Region</h3>
-                        <BracketSegment
-                            bracket={getRegionBracket(rightRegions[1])}
-                            reverseOrder={true}
-                        />
-                    </div>
-                </div>
-            </div>
-
+        <FullBracketDisplay
+            regions={regions}
+            bracketName={bracketName}
+            year={selectedYear}
+        // No back link for main bracket view
+        >
             {!user && (
                 <div className="info-banner">
                     ℹ️ Log in to view your saved bracket
                 </div>
             )}
-        </div>
+        </FullBracketDisplay>
     );
 }
 

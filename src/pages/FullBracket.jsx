@@ -141,16 +141,6 @@ function FullBracket() {
 
                 {/* Center - Final Four */}
                 <div className="final-four-section">
-                    <h3>Final Four</h3>
-                    <div className="final-four-matchups">
-                        {finalFourMatchups.map((matchup, index) => (
-                            <div key={index} className={`ff-matchup ${index === 1 ? 'championship' : ''}`}>
-                                {index === 1 && <span className="ff-label">Championship</span>}
-                                <Matchup topTeam={matchup[0]} bottomTeam={matchup[1]} />
-                            </div>
-                        ))}
-                    </div>
-
                     {champion && (
                         <div className="champion-display">
                             <h3>🏆 Champion</h3>
@@ -161,6 +151,19 @@ function FullBracket() {
                             <p className="champion-mascot">{getMascotName(champion.name)}</p>
                         </div>
                     )}
+
+                    <h3>Final Four</h3>
+
+                    <div className="final-four-matchups">
+                        {finalFourMatchups.map((matchup, index) => (
+                            <div key={index} className={`ff-matchup ${index === 1 ? 'championship' : 'semifinal'}`}>
+                                <span className="ff-label">
+                                    {index === 0 ? 'Semifinal' : index === 1 ? 'Championship' : 'Semifinal'}
+                                </span>
+                                <Matchup topTeam={matchup[0]} bottomTeam={matchup[1]} />
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Right side - Two regions (reversed) */}

@@ -1,8 +1,12 @@
 /* FullBracket Page Styles */
 
+/* Override the main-content max-width for full bracket view */
 .full-bracket-container {
     padding: 20px;
     overflow-x: auto;
+    width: 100%;
+    max-width: none !important;
+    margin: 0 !important;
 }
 
 .full-bracket-container h2 {
@@ -10,12 +14,12 @@
     margin-bottom: 24px;
 }
 
-/* Bracket Layout - 3 columns */
+/* Bracket Layout - 3 columns, full width */
 .bracket-layout {
     display: flex;
-    justify-content: center;
-    gap: 24px;
-    min-width: max-content;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
 }
 
 /* Each side contains two regions stacked */
@@ -47,27 +51,32 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 20px;
-    min-width: 180px;
+    gap: 16px;
+    min-width: 300px;
+    flex-shrink: 0;
 }
 
 .final-four-section h3 {
-    margin-bottom: 16px;
+    margin-bottom: 8px;
 }
 
+/* Final Four matchups in a row: Left | Championship | Right */
 .final-four-matchups {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 16px;
     align-items: center;
+    justify-content: center;
 }
 
 .ff-matchup {
-    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .ff-matchup.championship {
-    margin: 16px 0;
+    margin: 0 8px;
 }
 
 .ff-label {
@@ -80,13 +89,13 @@
     letter-spacing: 1px;
 }
 
-/* Champion Display */
+/* Champion Display - Above Final Four matchups */
 .champion-display {
     background: var(--secondary-bg);
-    padding: 20px;
+    padding: 16px 24px;
     border-radius: 12px;
     text-align: center;
-    margin-top: 20px;
+    margin-bottom: 16px;
 }
 
 .champion-display h3 {

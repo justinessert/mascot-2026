@@ -1,0 +1,54 @@
+/* BracketSegment Styles - Flex-based Tournament Tree */
+
+.bracket-segment {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+    /* Set a fixed height so all rounds can use flex: 1 */
+    height: 600px;
+}
+
+/* Reversed layout only on large screens (when bracket is side-by-side) */
+@media (min-width: 1200px) {
+    .bracket-segment.reversed {
+        flex-direction: row-reverse;
+    }
+}
+
+.round {
+    display: flex;
+    flex-direction: column;
+}
+
+.round-header {
+    font-size: 0.75rem;
+    color: var(--secondary-text);
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+/* Each round's matchups column fills the full height */
+.matchups-column {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* Each matchup wrapper takes equal space within the column */
+.matchup-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 
+ * With this structure:
+ * - Round 1 (8 matchups): each wrapper gets 1/8 of height
+ * - Round 2 (4 matchups): each wrapper gets 1/4 of height
+ * - Round 3 (2 matchups): each wrapper gets 1/2 of height
+ * - Round 4 (1 matchup): wrapper gets full height
+ * 
+ * Since matchups are centered in their wrapper, they automatically
+ * align centered between their feeder matchups.
+ */

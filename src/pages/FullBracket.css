@@ -1,0 +1,168 @@
+/* FullBracket Page Styles */
+
+.full-bracket-container {
+    padding: 20px;
+    overflow-x: auto;
+}
+
+.full-bracket-container h2 {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+/* Bracket Layout - 3 columns */
+.bracket-layout {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    min-width: max-content;
+}
+
+/* Each side contains two regions stacked */
+.bracket-side {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.region-wrapper {
+    background: rgba(30, 30, 30, 0.5);
+    padding: 16px;
+    border-radius: 12px;
+}
+
+.region-wrapper h3 {
+    text-align: center;
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+}
+
+.region-wrapper.reverse h3 {
+    text-align: center;
+}
+
+/* Final Four Section */
+.final-four-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    min-width: 180px;
+}
+
+.final-four-section h3 {
+    margin-bottom: 16px;
+}
+
+.final-four-matchups {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+}
+
+.ff-matchup {
+    position: relative;
+}
+
+.ff-matchup.championship {
+    margin: 16px 0;
+}
+
+.ff-label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--secondary-text);
+    text-align: center;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Champion Display */
+.champion-display {
+    background: var(--secondary-bg);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.champion-display h3 {
+    margin-bottom: 12px;
+}
+
+.champion-image {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    margin: 12px 0;
+}
+
+.champion-name {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.champion-mascot {
+    color: var(--accent-color);
+    font-size: 0.9rem;
+    text-transform: capitalize;
+}
+
+/* Info Banner */
+.full-bracket-container .info-banner {
+    text-align: center;
+    margin-top: 24px;
+    padding: 12px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid var(--accent-color);
+    color: var(--accent-color);
+    border-radius: 6px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* No Data Message */
+.no-data-message {
+    text-align: center;
+    padding: 40px;
+    background: var(--secondary-bg);
+    border-radius: 12px;
+    max-width: 400px;
+    margin: 40px auto;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .bracket-layout {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .final-four-section {
+        order: -1;
+    }
+
+    .bracket-side {
+        width: 100%;
+        max-width: 600px;
+    }
+}
+
+@media (max-width: 768px) {
+    .full-bracket-container {
+        padding: 12px;
+    }
+
+    .region-wrapper {
+        padding: 12px;
+    }
+
+    .region-wrapper h3 {
+        font-size: 0.95rem;
+    }
+}

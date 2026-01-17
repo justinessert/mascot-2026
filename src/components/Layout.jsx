@@ -3,17 +3,15 @@
  * 
  * This component wraps all pages and provides:
  * - Navigation header
+ * - Year selector dropdown
  * - User authentication status display
  * - Consistent page structure
- * 
- * KEY CONCEPT: Outlet
- * The <Outlet /> component from React Router renders the matched child route.
- * It's similar to Angular's <router-outlet>.
  */
 
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
+import { useYear } from '../hooks/useYear.jsx';
 import './Layout.css';
 
 function Layout() {
@@ -22,6 +20,9 @@ function Layout() {
 
     // Get user and logout function from our auth hook
     const { user, logout } = useAuth();
+
+    // Get year selection from our year hook
+    const { selectedYear, setSelectedYear, availableYears } = useYear();
 
     const toggleMenu = () => setMenuOpen(!menuOpen);
     const closeMenu = () => setMenuOpen(false);
@@ -41,6 +42,10 @@ function Layout() {
         }
     };
 
+    const handleYearChange = (e) => {
+        setSelectedYear(Number(e.target.value));
+    };
+
     return (
         <div className="app-container">
             {/* Navigation Header */}
@@ -49,6 +54,21 @@ function Layout() {
                     <Link to="/" className="logo" onClick={closeMenu}>
                         🏀 Mascot Madness
                     </Link>
+
+                    {/* Year Selector */}
+                    <div className="year-selector">
+                        <select
+                            value={selectedYear}
+                            onChange={handleYearChange}
+                            aria-label="Select tournament year"
+                        >
+                            {availableYears.map(year => (
+                                <option key={year} value={year}>
+                                    {year}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
                     {/* Mobile menu button */}
                     <button
@@ -68,7 +88,6 @@ function Layout() {
                         <button onClick={() => handleNavigation('/info')}>Info</button>
 
                         {/* Conditional rendering based on auth state */}
-                        {/* This is the React equivalent of *ngIf */}
                         {user ? (
                             // User is logged in - show their name and logout
                             <>

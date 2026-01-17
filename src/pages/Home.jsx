@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useYear } from '../hooks/useYear.jsx';
 import './Home.css';
 
 /**
@@ -6,10 +7,12 @@ import './Home.css';
  * Entry point for the application
  */
 function Home() {
+    const { selectedYear } = useYear();
+
     return (
         <div className="home-container">
             <div className="hero-section">
-                <h1>🏀 Mascot Madness 2026</h1>
+                <h1>🏀 Mascot Madness {selectedYear}</h1>
                 <p className="tagline">Build your bracket based on who has the better mascot!</p>
 
                 <div className="cta-buttons">

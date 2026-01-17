@@ -35,7 +35,7 @@ export class Team {
     constructor(name, seed) {
         this.name = name;
         this.seed = seed;
-        this.image = `assets/teams/${name}.jpg`;
+        this.image = `/assets/teams/${name}.jpg`;
         this.nickname = nicknames[name] || '';
         this.displayName = `${this.name} ${this.nickname}`;
         this.shortDisplayName = this.name;
@@ -140,6 +140,54 @@ export class Region {
             this.currentMatchupIndex += 2;
         } else {
             this.advanceRound();
+        }
+    }
+
+    /**
+     * Get the current matchup (two teams to choose between)
+     */
+    getCurrentMatchup() {
+        if (this.champion) return null;
+        if (!this.bracket[this.roundIndex]) return null;
+
+        const team1 = this.bracket[this.roundIndex][this.currentMatchupIndex];
+        const team2 = this.bracket[this.roundIndex][this.currentMatchupIndex + 1];
+
+        if (!team1 || !team2) return null;
+        return [team1, team2];
+    }
+
+    /**
+     * Get the region champion (null if not yet determined)
+     */
+    getChampion() {
+        return this.champion;
+    }
+
+    /**
+     * Get progress as [completed, total]
+     */
+    getProgress() {
+        return [this.nPicks, this.totalPicks];
+    }
+
+    /**
+     * Alias for handleWinnerSelection
+     */
+    selectWinner(winner) {
+        this.handleWinnerSelection(winner);
+    }
+
+    /**
+     * Add a team to the bracket (used for Final Four)
+     */
+    addTeam(team) {
+        // Find first empty slot in first round
+        for (let i = 0; i < this.bracket[0].length; i++) {
+            if (!this.bracket[0][i]) {
+                this.bracket[0][i] = team;
+                return;
+            }
         }
     }
 }

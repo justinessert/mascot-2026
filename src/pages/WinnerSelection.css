@@ -1,0 +1,317 @@
+/* Winner Selection Page Styles */
+
+.winner-selection-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.winner-selection-container h2 {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+}
+
+.current-region {
+    color: var(--secondary-text);
+    margin-bottom: 30px;
+}
+
+/* No data message */
+.no-data-message {
+    background: var(--secondary-bg);
+    padding: 40px;
+    border-radius: 12px;
+    margin-top: 40px;
+}
+
+.no-data-message h2 {
+    margin-bottom: 16px;
+}
+
+.no-data-message p {
+    color: var(--secondary-text);
+    margin-bottom: 8px;
+}
+
+/* Matchup Display */
+.matchup {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.team-card {
+    background: var(--secondary-bg);
+    border-radius: 16px;
+    padding: 30px;
+    width: 280px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.team-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-color);
+}
+
+.team-card img {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+    margin-bottom: 16px;
+}
+
+.team-card .mascot-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--primary-text);
+}
+
+.team-card .team-name {
+    color: var(--accent-color);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.vs {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--secondary-text);
+    padding: 0 10px;
+}
+
+/* Progress Container */
+.progress-container {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+}
+
+.progress-box {
+    background: var(--secondary-bg);
+    padding: 12px 20px;
+    border-radius: 8px;
+    min-width: 100px;
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    cursor: pointer;
+}
+
+.progress-box:hover {
+    background: #333;
+}
+
+.progress-box.active {
+    border-color: var(--accent-color);
+}
+
+.progress-box.complete {
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.progress-box.complete .progress-text {
+    color: #22c55e;
+}
+
+.progress-box .region-title {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--secondary-text);
+    margin-bottom: 4px;
+}
+
+.progress-box .progress-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Region Winner Display */
+.region-winner-display {
+    background: var(--secondary-bg);
+    padding: 40px;
+    border-radius: 16px;
+    max-width: 400px;
+    margin: 0 auto 30px;
+}
+
+.region-winner-display h3 {
+    margin-bottom: 20px;
+    font-size: 1.4rem;
+}
+
+.region-winner-image {
+    width: 180px;
+    height: 180px;
+    object-fit: contain;
+    margin-bottom: 16px;
+}
+
+.region-winner-display .mascot-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.region-winner-display .team-name {
+    color: var(--accent-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.winner-message {
+    color: var(--secondary-text);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+/* Champion Display */
+.champion-display {
+    background: var(--secondary-bg);
+    padding: 40px;
+    border-radius: 16px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.champion-display h2 {
+    margin-bottom: 16px;
+}
+
+.champion-display .mascot-name {
+    color: var(--accent-color);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.champion-image {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    margin: 20px 0;
+}
+
+/* Bracket Form */
+.bracket-form {
+    margin-top: 30px;
+}
+
+.bracket-form .form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.bracket-form label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--secondary-text);
+}
+
+.bracket-form input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: var(--primary-bg);
+    color: var(--primary-text);
+    font-size: 1rem;
+}
+
+.bracket-form input:disabled {
+    opacity: 0.6;
+}
+
+/* Button Group */
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.primary-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.primary-btn:hover:not(:disabled) {
+    background: #0056b3;
+}
+
+.primary-btn:disabled {
+    background: #4a4a4a;
+    cursor: not-allowed;
+}
+
+.secondary-btn {
+    background: transparent;
+    color: var(--primary-text);
+    border: 1px solid #444;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.secondary-btn:hover {
+    border-color: var(--accent-color);
+}
+
+/* Info Banner */
+.info-banner {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid var(--accent-color);
+    color: var(--accent-color);
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 20px;
+    font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .matchup {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .team-card {
+        width: 100%;
+        max-width: 280px;
+    }
+
+    .vs {
+        padding: 10px 0;
+    }
+
+    .progress-container {
+        gap: 8px;
+    }
+
+    .progress-box {
+        min-width: 70px;
+        padding: 10px 12px;
+    }
+
+    .progress-box .region-title {
+        font-size: 0.75rem;
+    }
+}

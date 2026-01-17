@@ -186,12 +186,42 @@ export function getMascotName(teamKey) {
 
 /**
  * Helper function to format team name from key
- * @param {string} teamKey - The team key (e.g., "north_carolina")
- * @returns {string} Formatted team name (e.g., "North Carolina")
+ * @param {string} teamKey - The team key (e.g., "north_carolina", "texas_a&m")
+ * @returns {string} Formatted team name (e.g., "North Carolina", "Texas A&M")
  */
 export function formatTeamName(teamKey) {
+    if (!teamKey) return '';
+
+    // Special cases for abbreviations that should be all caps
+    const abbreviations = {
+        'a&m': 'A&M',
+        'cc': 'CC',      // Corpus Christi
+        'uc': 'UC',      // UC Irvine, UC San Diego
+        'nc': 'NC',      // NC State, NC Central
+        'unc': 'UNC',    // UNC Wilmington, UNC Asheville
+        'tcu': 'TCU',
+        'byu': 'BYU',
+        'lsu': 'LSU',
+        'usc': 'USC',
+        'uab': 'UAB',
+        'ucla': 'UCLA',
+        'uconn': 'UConn',
+        'ucsb': 'UCSB',
+        'vcu': 'VCU',
+        'fdu': 'FDU',
+        'siu': 'SIU',
+    };
+
     return teamKey
         .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .map(word => {
+            const lower = word.toLowerCase();
+            // Check if it's a known abbreviation
+            if (abbreviations[lower]) {
+                return abbreviations[lower];
+            }
+            // Otherwise, capitalize first letter
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+        })
         .join(' ');
 }

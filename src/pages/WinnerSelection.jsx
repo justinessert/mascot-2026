@@ -348,7 +348,7 @@ function WinnerSelection() {
         }
 
         try {
-            await saveBracket(selectedYear, user.uid, regions, bracketName);
+            await saveBracket(user, selectedYear, regions, bracketName);
             setSaved(true);
             alert('Bracket saved successfully!');
         } catch (error) {
@@ -364,7 +364,7 @@ function WinnerSelection() {
         }
 
         try {
-            await publishBracket(selectedYear, user.uid, regions, bracketName);
+            await publishBracket(user, selectedYear, regions, bracketName, champion);
             setPublished(true);
             alert('Bracket published to leaderboard!');
         } catch (error) {

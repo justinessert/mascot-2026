@@ -1,0 +1,200 @@
+/* Info Page Styles */
+
+.info-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.info-container h1 {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.intro-text {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--secondary-text);
+    margin-bottom: 40px;
+    line-height: 1.6;
+}
+
+.intro-text strong {
+    color: var(--accent-color);
+}
+
+/* Info Sections */
+.info-section {
+    background: var(--secondary-bg);
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.info-section h2 {
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+}
+
+.info-section p {
+    color: var(--secondary-text);
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.info-section p:last-child {
+    margin-bottom: 0;
+}
+
+.info-section a {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+
+.info-section a:hover {
+    text-decoration: underline;
+}
+
+.info-section strong {
+    color: var(--primary-text);
+}
+
+/* Steps Grid */
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.step-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.step-number {
+    display: inline-flex;
+    width: 36px;
+    height: 36px;
+    background: var(--accent-color);
+    color: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.step-card h3 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+
+.step-card p {
+    font-size: 0.9rem;
+    color: var(--secondary-text);
+    margin: 0;
+}
+
+/* Scoring Section */
+.scoring-intro {
+    color: var(--secondary-text);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.scoring-table-wrapper {
+    overflow-x: auto;
+}
+
+.scoring-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.95rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.scoring-table th {
+    background: #3a3a3a;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--secondary-text);
+}
+
+.scoring-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.scoring-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.scoring-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.scoring-table .championship-row {
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.scoring-table .total-row {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.scoring-table .total-row td {
+    border-top: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* CTA Section */
+.cta-section {
+    text-align: center;
+    margin-top: 40px;
+}
+
+.primary-button {
+    display: inline-block;
+    padding: 14px 32px;
+    background: var(--accent-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+}
+
+.primary-button:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .info-container {
+        padding: 24px 16px;
+    }
+
+    .info-section {
+        padding: 20px 16px;
+    }
+
+    .steps-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .scoring-table th,
+    .scoring-table td {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+    }
+}

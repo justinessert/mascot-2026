@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useYear } from '../hooks/useYear.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { loadBracket } from '../services/bracketService';
+import HowItWorks from '../components/HowItWorks';
 import './Home.css';
 
 /**
@@ -56,28 +57,10 @@ function Home() {
                 </div>
             </div>
 
-            <div className="info-section">
-                <h2>How It Works</h2>
-                <div className="steps">
-                    <div className="step">
-                        <span className="step-number">1</span>
-                        <h3>Pick Your Winners</h3>
-                        <p>Choose which mascot you think would win in each matchup</p>
-                    </div>
-                    <div className="step">
-                        <span className="step-number">2</span>
-                        <h3>View Your Bracket</h3>
-                        <p>See your complete bracket and share it with friends</p>
-                    </div>
-                    <div className="step">
-                        <span className="step-number">3</span>
-                        <h3>Compete</h3>
-                        <p>Watch the leaderboard as the tournament progresses</p>
-                    </div>
-                </div>
-            </div>
+            <HowItWorks />
         </div>
     );
 }
 
 export default Home;
+

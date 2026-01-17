@@ -1,0 +1,60 @@
+/* HowItWorks Component Styles */
+
+.how-it-works {
+    background: var(--secondary-bg);
+    padding: 24px;
+    border-radius: 12px;
+}
+
+.how-it-works h2 {
+    text-align: center;
+    margin-bottom: 24px;
+    font-size: 1.4rem;
+}
+
+/* Steps Grid - 2x2 on large screens */
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.step-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.step-number {
+    display: inline-flex;
+    width: 36px;
+    height: 36px;
+    background: var(--accent-color);
+    color: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.step-card h3 {
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+
+.step-card p {
+    font-size: 0.9rem;
+    color: var(--secondary-text);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Responsive - single column on small screens */
+@media (max-width: 600px) {
+    .steps-grid {
+        grid-template-columns: 1fr;
+    }
+}

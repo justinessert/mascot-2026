@@ -12,6 +12,7 @@ import { formatTeamName, getMascotName } from '../constants/nicknames';
 import { initializeBracket, loadBracket, Region } from '../services/bracketService';
 import BracketSegment from '../components/BracketSegment';
 import Matchup from '../components/Matchup';
+import ComingSoon from '../components/ComingSoon';
 import { regionOrder } from '../constants/bracketData';
 import './FullBracket.css';
 
@@ -137,14 +138,7 @@ function FullBracket() {
 
     const bracketData = getBracketData();
     if (!bracketData.south.length && !bracketData.east.length) {
-        return (
-            <div className="full-bracket-container">
-                <div className="no-data-message">
-                    <h2>🏀 Bracket Not Available</h2>
-                    <p>The {selectedYear} bracket data is not available yet.</p>
-                </div>
-            </div>
-        );
+        return <ComingSoon year={selectedYear} />;
     }
 
     const champion = getChampion();

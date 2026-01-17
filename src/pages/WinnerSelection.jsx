@@ -16,6 +16,7 @@ import { useYear } from '../hooks/useYear.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { getMascotName, formatTeamName } from '../constants/nicknames';
 import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket } from '../services/bracketService';
+import ComingSoon from '../components/ComingSoon';
 import './WinnerSelection.css';
 
 // Session storage key for bracket state
@@ -385,15 +386,7 @@ function WinnerSelection() {
     // No data for selected year
     const bracketData = getBracketData();
     if (!bracketData.south.length && !bracketData.east.length) {
-        return (
-            <div className="winner-selection-container">
-                <div className="no-data-message">
-                    <h2>🏀 Bracket Not Available</h2>
-                    <p>The {selectedYear} bracket data is not available yet.</p>
-                    <p>Please select a different year or check back later.</p>
-                </div>
-            </div>
-        );
+        return <ComingSoon year={selectedYear} />;
     }
 
     // Champion view - show when all picks are complete

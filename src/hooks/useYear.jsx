@@ -10,26 +10,34 @@ import { bracketData, regionOrder } from '../constants/bracketData';
 
 const YearContext = createContext(null);
 
-// Get available years that have bracket data
+// Get all available years (including those without data yet)
 const getAvailableYears = () => {
     return Object.keys(bracketData)
         .map(Number)
-        .filter(year => {
-            const data = bracketData[year];
-            // Only include years that have actual team data
-            return data.south.length > 0 || data.east.length > 0;
-        })
         .sort((a, b) => b - a); // Most recent first
 };
 
+// Check if a year has actual bracket data
+const yearHasData = (year) => {
+    const data = bracketData[year];
+    return data && (data.south.length > 0 || data.east.length > 0);
+};
+
 export function YearProvider({ children }) {
-    // Get available years with data
+    // Get all available years
     const availableYears = getAvailableYears();
 
-    // Default to most recent year with data
-    const [selectedYear, setSelectedYear] = useState(
-        availableYears.length > 0 ? availableYears[0] : new Date().getFullYear()
-    );
+    // Determine default year: current year if available, otherwise most recent
+    const getDefaultYear = () => {
+        const currentYear = new Date().getFullYear();
+        if (availableYears.includes(currentYear)) {
+            return currentYear;
+        }
+        // Fallback to most recent year (list is sorted descending)
+        return availableYears[0];
+    };
+
+    const [selectedYear, setSelectedYear] = useState(getDefaultYear());
 
     // Get bracket data for the selected year
     const getBracketData = () => {
@@ -41,12 +49,18 @@ export function YearProvider({ children }) {
         return regionOrder[selectedYear] || regionOrder[2025];
     };
 
+    // Check if the selected year has bracket data
+    const hasBracketData = () => {
+        return yearHasData(selectedYear);
+    };
+
     const value = {
         selectedYear,
         setSelectedYear,
         availableYears,
         getBracketData,
         getRegionOrder,
+        hasBracketData,
     };
 
     return (

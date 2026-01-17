@@ -10,13 +10,16 @@
  * 4. Progress is shown for each region
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useYear } from '../hooks/useYear.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { getMascotName, formatTeamName } from '../constants/nicknames';
 import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket } from '../services/bracketService';
 import './WinnerSelection.css';
+
+// Session storage key for bracket state
+const getSessionKey = (year) => `bracket_session_${year}`;
 
 /**
  * Capitalize mascot name (title case)
@@ -44,13 +47,117 @@ function WinnerSelection() {
     const [saved, setSaved] = useState(false);
     const [published, setPublished] = useState(false);
     const [loading, setLoading] = useState(true);
+    const isInitializing = useRef(false);
 
-    // Initialize bracket when year or user changes
+    // Save bracket state to sessionStorage
+    const saveToSession = (regionsData, name, regionName, matchup) => {
+        try {
+            const sessionData = {
+                regions: Object.keys(regionsData).reduce((acc, key) => {
+                    acc[key] = regionsData[key]?.toDict?.() || null;
+                    return acc;
+                }, {}),
+                bracketName: name,
+                currentRegionName: regionName,
+                currentMatchup: matchup?.map(t => t?.toDict?.() || null) || []
+            };
+            sessionStorage.setItem(getSessionKey(selectedYear), JSON.stringify(sessionData));
+        } catch (error) {
+            console.error('Error saving to session:', error);
+        }
+    };
+
+    // Load bracket state from sessionStorage
+    const loadFromSession = () => {
+        try {
+            const sessionData = sessionStorage.getItem(getSessionKey(selectedYear));
+            if (!sessionData) return null;
+
+            const parsed = JSON.parse(sessionData);
+            const loadedRegions = {};
+            Object.keys(parsed.regions).forEach(key => {
+                if (parsed.regions[key]) {
+                    loadedRegions[key] = Region.fromDict(parsed.regions[key], selectedYear);
+                }
+            });
+
+            return {
+                regions: loadedRegions,
+                bracketName: parsed.bracketName || '',
+                currentRegionName: parsed.currentRegionName || '',
+                currentMatchup: parsed.currentMatchup || []
+            };
+        } catch (error) {
+            console.error('Error loading from session:', error);
+            return null;
+        }
+    };
+
+    // Initialize bracket when year changes (user handled separately)
     useEffect(() => {
         initializeOrLoadBracket();
-    }, [selectedYear, user]);
+    }, [selectedYear]);
+
+    // Handle user login - check if Firebase has saved bracket
+    useEffect(() => {
+        if (user && !isInitializing.current) {
+            checkFirebaseBracket();
+        }
+    }, [user]);
+
+    // Check Firebase for saved bracket when user logs in
+    const checkFirebaseBracket = async () => {
+        try {
+            const savedBracket = await loadBracket(user, selectedYear);
+            if (savedBracket) {
+                // Firebase has saved bracket - use it and override session
+                applyLoadedBracket(savedBracket);
+                sessionStorage.removeItem(getSessionKey(selectedYear));
+            }
+            // If no saved bracket in Firebase, keep current session state
+        } catch (error) {
+            console.error('Error checking Firebase bracket:', error);
+        }
+    };
+
+    // Apply a loaded bracket (from Firebase or session) to state
+    const applyLoadedBracket = (savedBracket) => {
+        const regionOrder = getRegionOrder();
+        setRegions(savedBracket.regions);
+        setBracketName(savedBracket.name || savedBracket.bracketName || '');
+        setSaved(!!savedBracket.name);
+        setPublished(savedBracket.published || false);
+
+        // Check if we have a champion
+        const finalFour = savedBracket.regions.final_four;
+        if (finalFour && finalFour.getChampion()) {
+            setChampion(finalFour.getChampion());
+        } else {
+            setChampion(null);
+        }
+
+        // Find first incomplete region to show
+        const allRegions = [...regionOrder, 'final_four'];
+        let foundIncomplete = false;
+        for (const regionName of allRegions) {
+            const region = savedBracket.regions[regionName];
+            if (region && !region.getChampion()) {
+                setCurrentRegionName(regionName);
+                setCurrentMatchup(region.getCurrentMatchup() || []);
+                foundIncomplete = true;
+                break;
+            }
+        }
+        // If all regions complete, show final four
+        if (!foundIncomplete && savedBracket.regions.final_four) {
+            setCurrentRegionName('final_four');
+            setCurrentMatchup([]);
+        }
+    };
 
     const initializeOrLoadBracket = async () => {
+        if (isInitializing.current) return;
+        isInitializing.current = true;
         setLoading(true);
 
         const bracketData = getBracketData();
@@ -59,55 +166,39 @@ function WinnerSelection() {
         // Check if we have data for this year
         if (!bracketData.south.length && !bracketData.east.length) {
             setLoading(false);
+            isInitializing.current = false;
             return;
         }
 
-        // Try to load saved bracket from Firebase if user is logged in
+        // First, try to load from Firebase if user is logged in
         if (user) {
             try {
                 const savedBracket = await loadBracket(user, selectedYear);
                 if (savedBracket) {
-                    // Use the saved bracket
-                    setRegions(savedBracket.regions);
-                    setBracketName(savedBracket.name || '');
-                    setSaved(true);
-                    setPublished(savedBracket.published || false);
-
-                    // Check if we have a champion
-                    const finalFour = savedBracket.regions.final_four;
-                    if (finalFour && finalFour.getChampion()) {
-                        setChampion(finalFour.getChampion());
-                    } else {
-                        setChampion(null);
-                    }
-
-                    // Find first incomplete region to show
-                    const allRegions = [...regionOrder, 'final_four'];
-                    for (const regionName of allRegions) {
-                        const region = savedBracket.regions[regionName];
-                        if (region && !region.getChampion()) {
-                            setCurrentRegionName(regionName);
-                            setCurrentMatchup(region.getCurrentMatchup() || []);
-                            break;
-                        }
-                    }
-                    // If all regions complete, show final four
-                    if (!currentRegionName && savedBracket.regions.final_four) {
-                        setCurrentRegionName('final_four');
-                        setCurrentMatchup([]);
-                    }
-
+                    // Firebase has saved bracket - use it
+                    applyLoadedBracket(savedBracket);
+                    sessionStorage.removeItem(getSessionKey(selectedYear));
                     setLoading(false);
+                    isInitializing.current = false;
                     return;
                 }
             } catch (error) {
                 console.error('Error loading saved bracket:', error);
-                // Fall through to create new bracket
             }
         }
 
-        // Create a new bracket if no saved one
+        // No Firebase bracket - try session storage
+        const sessionBracket = loadFromSession();
+        if (sessionBracket && Object.keys(sessionBracket.regions).length > 0) {
+            applyLoadedBracket(sessionBracket);
+            setLoading(false);
+            isInitializing.current = false;
+            return;
+        }
+
+        // No saved bracket anywhere - create new one
         createNewBracket();
+        isInitializing.current = false;
     };
 
     const createNewBracket = () => {
@@ -147,18 +238,53 @@ function WinnerSelection() {
         // Record the selection
         currentRegion.selectWinner(winner);
 
+        // Get the next matchup (before triggering re-render)
+        let nextMatchup = [];
+        let nextRegionName = currentRegionName;
+
         // Check if region is complete
         const regionChampion = currentRegion.getChampion();
         if (regionChampion) {
             // Move to next region or final four
-            moveToNextRegion(regionChampion);
+            const regionOrder = [...getRegionOrder(), 'final_four'];
+
+            // Add region champion to final four if not already final four
+            if (currentRegionName !== 'final_four') {
+                const finalFour = regions.final_four;
+                if (finalFour) {
+                    finalFour.addTeam(regionChampion);
+                }
+            }
+
+            // Find next incomplete region
+            let foundNext = false;
+            for (const regionName of regionOrder) {
+                const region = regions[regionName];
+                if (region && !region.getChampion()) {
+                    nextRegionName = regionName;
+                    nextMatchup = region.getCurrentMatchup() || [];
+                    foundNext = true;
+                    break;
+                }
+            }
+
+            if (!foundNext) {
+                // All regions complete - we have a champion!
+                setChampion(regions.final_four?.getChampion());
+            }
         } else {
             // Get next matchup in current region
-            setCurrentMatchup(currentRegion.getCurrentMatchup() || []);
+            nextMatchup = currentRegion.getCurrentMatchup() || [];
         }
 
-        // Trigger re-render
-        setRegions({ ...regions });
+        // Update state
+        const newRegions = { ...regions };
+        setRegions(newRegions);
+        setCurrentRegionName(nextRegionName);
+        setCurrentMatchup(nextMatchup);
+
+        // Save to session storage
+        saveToSession(newRegions, bracketName, nextRegionName, nextMatchup);
     };
 
     // Move to the next incomplete region
@@ -212,7 +338,7 @@ function WinnerSelection() {
     // Handle saving the bracket
     const handleSaveBracket = async () => {
         if (!user) {
-            navigate('/login');
+            navigate('/login?redirect=/bracket/pick');
             return;
         }
 
@@ -306,7 +432,7 @@ function WinnerSelection() {
 
                             {!user && (
                                 <>
-                                    <button onClick={() => navigate('/login')} className="secondary-btn">
+                                    <button onClick={() => navigate('/login?redirect=/bracket/pick')} className="secondary-btn">
                                         Log In
                                     </button>
                                     <button onClick={() => navigate('/signup')} className="secondary-btn">

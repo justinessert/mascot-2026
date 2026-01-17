@@ -9,11 +9,14 @@ import { useState, useEffect } from 'react';
 import { useYear } from '../hooks/useYear.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { formatTeamName, getMascotName } from '../constants/nicknames';
-import { initializeBracket, loadBracket } from '../services/bracketService';
+import { initializeBracket, loadBracket, Region } from '../services/bracketService';
 import BracketSegment from '../components/BracketSegment';
 import Matchup from '../components/Matchup';
 import { regionOrder } from '../constants/bracketData';
 import './FullBracket.css';
+
+// Session storage key (same as WinnerSelection)
+const getSessionKey = (year) => `bracket_session_${year}`;
 
 function FullBracket() {
     const { selectedYear, getBracketData, getRegionOrder } = useYear();
@@ -28,6 +31,30 @@ function FullBracket() {
         loadBracketData();
     }, [selectedYear, user]);
 
+    // Load bracket state from sessionStorage
+    const loadFromSession = () => {
+        try {
+            const sessionData = sessionStorage.getItem(getSessionKey(selectedYear));
+            if (!sessionData) return null;
+
+            const parsed = JSON.parse(sessionData);
+            const loadedRegions = {};
+            Object.keys(parsed.regions).forEach(key => {
+                if (parsed.regions[key]) {
+                    loadedRegions[key] = Region.fromDict(parsed.regions[key], selectedYear);
+                }
+            });
+
+            return {
+                regions: loadedRegions,
+                bracketName: parsed.bracketName || ''
+            };
+        } catch (error) {
+            console.error('Error loading from session:', error);
+            return null;
+        }
+    };
+
     const loadBracketData = async () => {
         setLoading(true);
 
@@ -39,7 +66,7 @@ function FullBracket() {
             return;
         }
 
-        // Try to load saved bracket if user is logged in
+        // First, try to load saved bracket from Firebase if user is logged in
         if (user) {
             try {
                 const savedBracket = await loadBracket(user, selectedYear);
@@ -54,7 +81,16 @@ function FullBracket() {
             }
         }
 
-        // Create a fresh bracket for viewing structure
+        // No Firebase bracket - try session storage
+        const sessionBracket = loadFromSession();
+        if (sessionBracket && Object.keys(sessionBracket.regions).length > 0) {
+            setRegions(sessionBracket.regions);
+            setBracketName(sessionBracket.bracketName || '');
+            setLoading(false);
+            return;
+        }
+
+        // No saved bracket anywhere - create empty structure
         const newRegions = initializeBracket(selectedYear);
         setRegions(newRegions);
         setBracketName('');

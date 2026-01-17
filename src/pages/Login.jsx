@@ -19,7 +19,7 @@
  */
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import PasswordInput from '../components/PasswordInput';
 import './Auth.css';
@@ -48,6 +48,10 @@ function Login() {
 
     // useNavigate returns a function we can call to change routes
     const navigate = useNavigate();
+
+    // useSearchParams lets us read query parameters from the URL
+    const [searchParams] = useSearchParams();
+    const redirectPath = searchParams.get('redirect') || '/';
 
     // useAuth returns our auth context with user info and functions
     // This works because we wrapped the app in <AuthProvider> in main.jsx
@@ -80,8 +84,8 @@ function Login() {
             // This calls Firebase signInWithEmailAndPassword under the hood
             await login(email, password);
 
-            // If successful, navigate to home page
-            navigate('/');
+            // If successful, navigate to redirect path (or home)
+            navigate(redirectPath);
 
         } catch (err) {
             // Firebase returns error codes like 'auth/wrong-password'

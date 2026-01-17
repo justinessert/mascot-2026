@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useYear } from '../hooks/useYear.jsx';
+import { useAuth } from '../hooks/useAuth.jsx';
+import { loadBracket } from '../services/bracketService';
 import './Home.css';
 
 /**
@@ -8,6 +11,28 @@ import './Home.css';
  */
 function Home() {
     const { selectedYear } = useYear();
+    const { user } = useAuth();
+    const [hasBracket, setHasBracket] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    // Check if user has a saved bracket for the selected year
+    useEffect(() => {
+        const checkBracket = async () => {
+            if (user) {
+                try {
+                    const savedBracket = await loadBracket(user, selectedYear);
+                    setHasBracket(!!savedBracket);
+                } catch (error) {
+                    console.error('Error checking bracket:', error);
+                    setHasBracket(false);
+                }
+            } else {
+                setHasBracket(false);
+            }
+            setLoading(false);
+        };
+        checkBracket();
+    }, [user, selectedYear]);
 
     return (
         <div className="home-container">
@@ -16,9 +41,15 @@ function Home() {
                 <p className="tagline">Build your bracket based on who has the better mascot!</p>
 
                 <div className="cta-buttons">
-                    <Link to="/bracket/pick" className="primary-button">
-                        Start Picking
-                    </Link>
+                    {!loading && hasBracket ? (
+                        <Link to="/bracket/view/full" className="primary-button">
+                            View Your Bracket
+                        </Link>
+                    ) : (
+                        <Link to="/bracket/pick" className="primary-button">
+                            Start Picking
+                        </Link>
+                    )}
                     <Link to="/leaderboard" className="secondary-button">
                         View Leaderboard
                     </Link>

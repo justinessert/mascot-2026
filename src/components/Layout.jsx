@@ -91,9 +91,9 @@ function Layout() {
                         {user ? (
                             // User is logged in - show their name and logout
                             <>
-                                <span className="user-display">
+                                <Link to="/profile" className="user-display" onClick={closeMenu}>
                                     👤 {user.displayName || user.email}
-                                </span>
+                                </Link>
                                 <button onClick={handleLogout} className="logout-btn">
                                     Logout
                                 </button>

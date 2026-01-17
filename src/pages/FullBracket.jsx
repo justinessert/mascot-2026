@@ -9,16 +9,13 @@ import { useState, useEffect } from 'react';
 import { useYear } from '../hooks/useYear.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { formatTeamName, getMascotName } from '../constants/nicknames';
-import { initializeBracket, loadBracket, Region } from '../services/bracketService';
+import { initializeBracket, loadBracket, Region, loadTemporaryBracket } from '../services/bracketService';
 import ComingSoon from '../components/ComingSoon';
 import FullBracketDisplay from '../components/FullBracketDisplay';
 import './FullBracket.css';
 
-// Session storage key (same as WinnerSelection)
-const getSessionKey = (year) => `bracket_session_${year}`;
-
 function FullBracket() {
-    const { selectedYear, getBracketData, getRegionOrder } = useYear();
+    const { selectedYear, getBracketData } = useYear();
     const { user } = useAuth();
 
     const [regions, setRegions] = useState({});
@@ -30,26 +27,25 @@ function FullBracket() {
         loadBracketData();
     }, [selectedYear, user]);
 
-    // Load bracket state from sessionStorage
-    const loadFromSession = () => {
+    // Load bracket state from memory
+    const loadFromMemory = () => {
         try {
-            const sessionData = sessionStorage.getItem(getSessionKey(selectedYear));
-            if (!sessionData) return null;
+            const memoryData = loadTemporaryBracket(selectedYear);
+            if (!memoryData) return null;
 
-            const parsed = JSON.parse(sessionData);
             const loadedRegions = {};
-            Object.keys(parsed.regions).forEach(key => {
-                if (parsed.regions[key]) {
-                    loadedRegions[key] = Region.fromDict(parsed.regions[key], selectedYear);
+            Object.keys(memoryData.regions).forEach(key => {
+                if (memoryData.regions[key]) {
+                    loadedRegions[key] = Region.fromDict(memoryData.regions[key], selectedYear);
                 }
             });
 
             return {
                 regions: loadedRegions,
-                bracketName: parsed.bracketName || ''
+                bracketName: memoryData.bracketName || ''
             };
         } catch (error) {
-            console.error('Error loading from session:', error);
+            console.error('Error loading from memory:', error);
             return null;
         }
     };
@@ -80,11 +76,11 @@ function FullBracket() {
             }
         }
 
-        // No Firebase bracket - try session storage
-        const sessionBracket = loadFromSession();
-        if (sessionBracket && Object.keys(sessionBracket.regions).length > 0) {
-            setRegions(sessionBracket.regions);
-            setBracketName(sessionBracket.bracketName || '');
+        // No Firebase bracket - try memory
+        const memoryBracket = loadFromMemory();
+        if (memoryBracket && Object.keys(memoryBracket.regions).length > 0) {
+            setRegions(memoryBracket.regions);
+            setBracketName(memoryBracket.bracketName || '');
             setLoading(false);
             return;
         }

@@ -10,7 +10,11 @@ import {
     setDoc,
     getDoc,
     addDoc,
-    collection
+    collection,
+    query,
+    where,
+    limit,
+    getDocs
 } from 'firebase/firestore';
 import { db } from './firebase';
 import {
@@ -20,6 +24,17 @@ import {
     nicknames,
     regionOrder
 } from '../constants';
+
+// In-memory storage for bracket state (cleared on refresh, persisted on navigation)
+const tempBracketStorage = {};
+
+export function saveTemporaryBracket(year, data) {
+    tempBracketStorage[year] = data;
+}
+
+export function loadTemporaryBracket(year) {
+    return tempBracketStorage[year] || null;
+}
 
 /**
  * Map team name through First Four if applicable
@@ -178,16 +193,18 @@ export class Region {
         this.handleWinnerSelection(winner);
     }
 
-    /**
-     * Add a team to the bracket (used for Final Four)
-     */
-    addTeam(team) {
-        // Find first empty slot in first round
-        for (let i = 0; i < this.bracket[0].length; i++) {
-            if (!this.bracket[0][i]) {
-                this.bracket[0][i] = team;
-                return;
-            }
+
+    addTeam(team, idx) {
+        // Convert seed to bracket position (only used for final four)
+        const mapping = {
+            0: 0,
+            1: 2,
+            2: 3,
+            3: 1
+        };
+        const position = mapping[idx];
+        if (position !== undefined && this.bracket[0]) {
+            this.bracket[0][position] = team;
         }
     }
 }
@@ -310,4 +327,67 @@ export async function publishBracket(user, year, regions, name, champion) {
 
     // Mark as published in saved bracket
     await saveBracket(user, year, regions, name, true);
+}
+
+/**
+ * Get user's bracket history across all years
+ */
+export async function getUserBracketHistory(user) {
+    if (!user) return [];
+
+    const years = Object.keys(bracketData).sort((a, b) => b - a); // Descending years
+    const history = [];
+
+    for (const year of years) {
+        // 1. Try to load saved bracket
+        const savedBracket = await loadBracket(user, year);
+
+        if (savedBracket) {
+            let score = 0;
+
+            // 2. If published, try to get score from leaderboard
+            if (savedBracket.published) {
+                try {
+                    const leaderboardRef = collection(db, `leaderboard/${year}/data`);
+                    // Fetch all entries for this user to ensure we get the best score 
+                    // (in case of duplicates from multiple publishes)
+                    const q = query(
+                        leaderboardRef,
+                        where("bracketId", "==", user.uid)
+                    );
+                    const querySnapshot = await getDocs(q);
+
+                    if (!querySnapshot.empty) {
+                        // Find the entry with the highest score
+                        let maxEntryScore = 0;
+                        querySnapshot.forEach(doc => {
+                            const data = doc.data();
+                            const entryScore = data.score || 0;
+                            if (entryScore > maxEntryScore) {
+                                maxEntryScore = entryScore;
+                            }
+                        });
+                        score = maxEntryScore;
+                    }
+                } catch (err) {
+                    console.error(`Error fetching leaderboard for ${year}:`, err);
+                }
+            }
+
+            // Determine if valid bracket (has regions)
+            const champion = savedBracket.regions.final_four?.getChampion();
+
+            history.push({
+                year: parseInt(year),
+                bracketId: user.uid, // User's bracket ID is their UID
+                bracketName: savedBracket.name || 'Untitled Bracket',
+                published: savedBracket.published,
+                score: savedBracket.published ? score : '-',
+                champion: champion,
+                timestamp: savedBracket.timestamp
+            });
+        }
+    }
+
+    return history;
 }

@@ -7,13 +7,14 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { loadBracketByUserId } from '../services/bracketService';
 import FullBracketDisplay from '../components/FullBracketDisplay';
 import './FullBracket.css'; // Reuse FullBracket styles
 
 function BracketView() {
     const { year, uuid } = useParams();
+    const location = useLocation();
     const numericYear = parseInt(year, 10);
 
     const [regions, setRegions] = useState({});
@@ -21,6 +22,11 @@ function BracketView() {
     const [bracketName, setBracketName] = useState('');
     const [userName, setUserName] = useState('');
     const [error, setError] = useState(null);
+
+    // Determine back link destination
+    const fromProfile = location.state?.from === 'profile';
+    const backLink = fromProfile ? '/profile' : '/leaderboard';
+    const backLinkText = fromProfile ? 'Back to Profile' : 'Back to Leaderboard';
 
     // Load the shared bracket on mount
     useEffect(() => {
@@ -62,7 +68,7 @@ function BracketView() {
                 <div className="bracket-error">
                     <h2>⚠️ {error}</h2>
                     <p>The bracket you're looking for could not be found.</p>
-                    <Link to="/leaderboard" className="back-link">← Back to Leaderboard</Link>
+                    <Link to={backLink} className="back-link">← {backLinkText}</Link>
                 </div>
             </div>
         );
@@ -74,8 +80,8 @@ function BracketView() {
             bracketName={bracketName}
             userName={userName}
             year={year}
-            backLink="/leaderboard"
-            backLinkText="Back to Leaderboard"
+            backLink={backLink}
+            backLinkText={backLinkText}
         />
     );
 }

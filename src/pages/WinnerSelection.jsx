@@ -15,12 +15,9 @@ import { useNavigate } from 'react-router-dom';
 import { useYear } from '../hooks/useYear.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { getMascotName, formatTeamName } from '../constants/nicknames';
-import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket } from '../services/bracketService';
+import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket } from '../services/bracketService';
 import ComingSoon from '../components/ComingSoon';
 import './WinnerSelection.css';
-
-// Session storage key for bracket state
-const getSessionKey = (year) => `bracket_session_${year}`;
 
 /**
  * Capitalize mascot name (title case)
@@ -50,10 +47,10 @@ function WinnerSelection() {
     const [loading, setLoading] = useState(true);
     const isInitializing = useRef(false);
 
-    // Save bracket state to sessionStorage
-    const saveToSession = (regionsData, name, regionName, matchup) => {
+    // Save bracket state to memory
+    const saveToMemory = (regionsData, name, regionName, matchup) => {
         try {
-            const sessionData = {
+            const memoryData = {
                 regions: Object.keys(regionsData).reduce((acc, key) => {
                     acc[key] = regionsData[key]?.toDict?.() || null;
                     return acc;
@@ -62,34 +59,33 @@ function WinnerSelection() {
                 currentRegionName: regionName,
                 currentMatchup: matchup?.map(t => t?.toDict?.() || null) || []
             };
-            sessionStorage.setItem(getSessionKey(selectedYear), JSON.stringify(sessionData));
+            saveTemporaryBracket(selectedYear, memoryData);
         } catch (error) {
-            console.error('Error saving to session:', error);
+            console.error('Error saving to memory:', error);
         }
     };
 
-    // Load bracket state from sessionStorage
-    const loadFromSession = () => {
+    // Load bracket state from memory
+    const loadFromMemory = () => {
         try {
-            const sessionData = sessionStorage.getItem(getSessionKey(selectedYear));
-            if (!sessionData) return null;
+            const memoryData = loadTemporaryBracket(selectedYear);
+            if (!memoryData) return null;
 
-            const parsed = JSON.parse(sessionData);
             const loadedRegions = {};
-            Object.keys(parsed.regions).forEach(key => {
-                if (parsed.regions[key]) {
-                    loadedRegions[key] = Region.fromDict(parsed.regions[key], selectedYear);
+            Object.keys(memoryData.regions).forEach(key => {
+                if (memoryData.regions[key]) {
+                    loadedRegions[key] = Region.fromDict(memoryData.regions[key], selectedYear);
                 }
             });
 
             return {
                 regions: loadedRegions,
-                bracketName: parsed.bracketName || '',
-                currentRegionName: parsed.currentRegionName || '',
-                currentMatchup: parsed.currentMatchup || []
+                bracketName: memoryData.bracketName || '',
+                currentRegionName: memoryData.currentRegionName || '',
+                currentMatchup: memoryData.currentMatchup || []
             };
         } catch (error) {
-            console.error('Error loading from session:', error);
+            console.error('Error loading from memory:', error);
             return null;
         }
     };
@@ -122,17 +118,17 @@ function WinnerSelection() {
         try {
             const savedBracket = await loadBracket(user, selectedYear);
             if (savedBracket) {
-                // Firebase has saved bracket - use it and override session
+                // Firebase has saved bracket - use it and override memory
                 applyLoadedBracket(savedBracket);
-                sessionStorage.removeItem(getSessionKey(selectedYear));
+                saveTemporaryBracket(selectedYear, null); // Clear memory if loading from persistence
             }
-            // If no saved bracket in Firebase, keep current session state
+            // If no saved bracket in Firebase, keep current memory state
         } catch (error) {
             console.error('Error checking Firebase bracket:', error);
         }
     };
 
-    // Apply a loaded bracket (from Firebase or session) to state
+    // Apply a loaded bracket (from Firebase or memory) to state
     const applyLoadedBracket = (savedBracket) => {
         const regionOrder = getRegionOrder();
         setRegions(savedBracket.regions);
@@ -189,7 +185,7 @@ function WinnerSelection() {
                 if (savedBracket) {
                     // Firebase has saved bracket - use it
                     applyLoadedBracket(savedBracket);
-                    sessionStorage.removeItem(getSessionKey(selectedYear));
+                    saveTemporaryBracket(selectedYear, null);
                     setLoading(false);
                     isInitializing.current = false;
                     return;
@@ -199,10 +195,10 @@ function WinnerSelection() {
             }
         }
 
-        // No Firebase bracket - try session storage
-        const sessionBracket = loadFromSession();
-        if (sessionBracket && Object.keys(sessionBracket.regions).length > 0) {
-            applyLoadedBracket(sessionBracket);
+        // No Firebase bracket - try memory
+        const memoryBracket = loadFromMemory();
+        if (memoryBracket && Object.keys(memoryBracket.regions).length > 0) {
+            applyLoadedBracket(memoryBracket);
             setLoading(false);
             isInitializing.current = false;
             return;
@@ -263,8 +259,10 @@ function WinnerSelection() {
             // Add region champion to final four if not already final four
             if (currentRegionName !== 'final_four') {
                 const finalFour = regions.final_four;
+                // Define const idx based on the position of currentRegionName in regionOrder
+                const idx = regionOrder.indexOf(currentRegionName);
                 if (finalFour) {
-                    finalFour.addTeam(regionChampion);
+                    finalFour.addTeam(regionChampion, idx);
                 }
             }
 
@@ -295,35 +293,35 @@ function WinnerSelection() {
         setCurrentRegionName(nextRegionName);
         setRandomizedMatchup(nextMatchup);
 
-        // Save to session storage
-        saveToSession(newRegions, bracketName, nextRegionName, nextMatchup);
+        // Save to memory
+        saveToMemory(newRegions, bracketName, nextRegionName, nextMatchup);
     };
 
-    // Move to the next incomplete region
-    const moveToNextRegion = (regionChampion) => {
-        const regionOrder = [...getRegionOrder(), 'final_four'];
+    // // Move to the next incomplete region
+    // const moveToNextRegion = (regionChampion) => {
+    //     const regionOrder = [...getRegionOrder(), 'final_four'];
 
-        // Add region champion to final four if not already final four
-        if (currentRegionName !== 'final_four') {
-            const finalFour = regions.final_four;
-            if (finalFour) {
-                finalFour.addTeam(regionChampion);
-            }
-        }
+    //     // Add region champion to final four if not already final four
+    //     if (currentRegionName !== 'final_four') {
+    //         const finalFour = regions.final_four;
+    //         if (finalFour) {
+    //             finalFour.addTeam(regionChampion);
+    //         }
+    //     }
 
-        // Find next incomplete region
-        for (const regionName of regionOrder) {
-            const region = regions[regionName];
-            if (region && !region.getChampion()) {
-                setCurrentRegionName(regionName);
-                setRandomizedMatchup(region.getCurrentMatchup() || []);
-                return;
-            }
-        }
+    //     // Find next incomplete region
+    //     for (const regionName of regionOrder) {
+    //         const region = regions[regionName];
+    //         if (region && !region.getChampion()) {
+    //             setCurrentRegionName(regionName);
+    //             setRandomizedMatchup(region.getCurrentMatchup() || []);
+    //             return;
+    //         }
+    //     }
 
-        // All regions complete - we have a champion!
-        setChampion(regions.final_four?.getChampion());
-    };
+    //     // All regions complete - we have a champion!
+    //     setChampion(regions.final_four?.getChampion());
+    // };
 
     // Get progress for a specific region
     const getRegionProgress = (regionName) => {

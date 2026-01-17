@@ -13,6 +13,7 @@ import WinnerSelection from './pages/WinnerSelection';
 import BracketDisplay from './pages/BracketDisplay';
 import FullBracket from './pages/FullBracket';
 import BracketView from './pages/BracketView';
+import Profile from './pages/Profile';
 
 import './App.css';
 
@@ -29,6 +30,7 @@ function App() {
           <Route path="reset-password" element={<ResetPassword />} />
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="info" element={<Info />} />
+          <Route path="profile" element={<Profile />} />
 
           {/* Bracket routes */}
           <Route path="bracket" element={<Navigate to="/bracket/pick" replace />} />

@@ -136,8 +136,8 @@
     padding: 0;
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
+/* Mobile Responsive - Switch to hamburger menu at 950px */
+@media (max-width: 1050px) {
     .menu-toggle {
         display: block;
     }

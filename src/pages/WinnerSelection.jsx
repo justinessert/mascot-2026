@@ -94,6 +94,17 @@ function WinnerSelection() {
         }
     };
 
+    // Randomize matchup order so higher seed isn't always first
+    const setRandomizedMatchup = (matchup) => {
+        if (!matchup || matchup.length !== 2) {
+            setCurrentMatchup(matchup || []);
+            return;
+        }
+        // Simple random shuffle
+        const shuffled = Math.random() > 0.5 ? [matchup[0], matchup[1]] : [matchup[1], matchup[0]];
+        setCurrentMatchup(shuffled);
+    };
+
     // Initialize bracket when year changes (user handled separately)
     useEffect(() => {
         initializeOrLoadBracket();
@@ -144,7 +155,7 @@ function WinnerSelection() {
             const region = savedBracket.regions[regionName];
             if (region && !region.getChampion()) {
                 setCurrentRegionName(regionName);
-                setCurrentMatchup(region.getCurrentMatchup() || []);
+                setRandomizedMatchup(region.getCurrentMatchup() || []);
                 foundIncomplete = true;
                 break;
             }
@@ -214,7 +225,7 @@ function WinnerSelection() {
             setCurrentRegionName(regionOrder[0]);
             const firstRegion = newRegions[regionOrder[0]];
             if (firstRegion) {
-                setCurrentMatchup(firstRegion.getCurrentMatchup() || []);
+                setRandomizedMatchup(firstRegion.getCurrentMatchup() || []);
             }
         }
 
@@ -282,7 +293,7 @@ function WinnerSelection() {
         const newRegions = { ...regions };
         setRegions(newRegions);
         setCurrentRegionName(nextRegionName);
-        setCurrentMatchup(nextMatchup);
+        setRandomizedMatchup(nextMatchup);
 
         // Save to session storage
         saveToSession(newRegions, bracketName, nextRegionName, nextMatchup);
@@ -305,7 +316,7 @@ function WinnerSelection() {
             const region = regions[regionName];
             if (region && !region.getChampion()) {
                 setCurrentRegionName(regionName);
-                setCurrentMatchup(region.getCurrentMatchup() || []);
+                setRandomizedMatchup(region.getCurrentMatchup() || []);
                 return;
             }
         }
@@ -326,7 +337,7 @@ function WinnerSelection() {
         const region = regions[regionName];
         if (region) {
             setCurrentRegionName(regionName);
-            setCurrentMatchup(region.getCurrentMatchup() || []);
+            setRandomizedMatchup(region.getCurrentMatchup() || []);
         }
     };
 

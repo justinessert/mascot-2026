@@ -12,7 +12,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useYear } from '../hooks/useYear.jsx';
+import { useTournament } from '../hooks/useTournament.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { getMascotName, formatTeamName } from '../constants/nicknames';
 import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket } from '../services/bracketService';
@@ -33,8 +33,11 @@ function formatMascotName(teamKey) {
 
 function WinnerSelection() {
     const navigate = useNavigate();
-    const { selectedYear, getBracketData, getRegionOrder } = useYear();
+    const { selectedYear, selectedGender, getBracketData, getRegionOrder, getFirstFourMapping } = useTournament();
     const { user } = useAuth();
+
+    // Convert UI gender ('M'/'W') to service gender ('men'/'women')
+    const genderPath = selectedGender === 'W' ? 'women' : 'men';
 
     // Bracket state
     const [regions, setRegions] = useState({});
@@ -59,7 +62,7 @@ function WinnerSelection() {
                 currentRegionName: regionName,
                 currentMatchup: matchup?.map(t => t?.toDict?.() || null) || []
             };
-            saveTemporaryBracket(selectedYear, memoryData);
+            saveTemporaryBracket(selectedYear, memoryData, genderPath);
         } catch (error) {
             console.error('Error saving to memory:', error);
         }
@@ -68,7 +71,7 @@ function WinnerSelection() {
     // Load bracket state from memory
     const loadFromMemory = () => {
         try {
-            const memoryData = loadTemporaryBracket(selectedYear);
+            const memoryData = loadTemporaryBracket(selectedYear, genderPath);
             if (!memoryData) return null;
 
             const loadedRegions = {};
@@ -101,10 +104,11 @@ function WinnerSelection() {
         setCurrentMatchup(shuffled);
     };
 
-    // Initialize bracket when year changes (user handled separately)
+    // Initialize bracket when year or gender changes (user handled separately)
     useEffect(() => {
+        isInitializing.current = false; // Reset when year/gender changes
         initializeOrLoadBracket();
-    }, [selectedYear]);
+    }, [selectedYear, selectedGender]);
 
     // Handle user login - check if Firebase has saved bracket
     useEffect(() => {
@@ -116,11 +120,11 @@ function WinnerSelection() {
     // Check Firebase for saved bracket when user logs in
     const checkFirebaseBracket = async () => {
         try {
-            const savedBracket = await loadBracket(user, selectedYear);
+            const savedBracket = await loadBracket(user, selectedYear, genderPath);
             if (savedBracket) {
                 // Firebase has saved bracket - use it and override memory
                 applyLoadedBracket(savedBracket);
-                saveTemporaryBracket(selectedYear, null); // Clear memory if loading from persistence
+                saveTemporaryBracket(selectedYear, null, genderPath); // Clear memory if loading from persistence
             }
             // If no saved bracket in Firebase, keep current memory state
         } catch (error) {
@@ -171,8 +175,9 @@ function WinnerSelection() {
         const bracketData = getBracketData();
         const regionOrder = getRegionOrder();
 
-        // Check if we have data for this year
-        if (!bracketData.south.length && !bracketData.east.length) {
+        // Check if we have data for this year (first region has teams)
+        const firstRegionKey = Object.keys(bracketData)[0];
+        if (!firstRegionKey || !bracketData[firstRegionKey]?.length) {
             setLoading(false);
             isInitializing.current = false;
             return;
@@ -181,11 +186,11 @@ function WinnerSelection() {
         // First, try to load from Firebase if user is logged in
         if (user) {
             try {
-                const savedBracket = await loadBracket(user, selectedYear);
+                const savedBracket = await loadBracket(user, selectedYear, genderPath);
                 if (savedBracket) {
                     // Firebase has saved bracket - use it
                     applyLoadedBracket(savedBracket);
-                    saveTemporaryBracket(selectedYear, null);
+                    saveTemporaryBracket(selectedYear, null, genderPath);
                     setLoading(false);
                     isInitializing.current = false;
                     return;
@@ -210,16 +215,18 @@ function WinnerSelection() {
     };
 
     const createNewBracket = () => {
-        const regionOrder = getRegionOrder();
+        const bracketDataForYear = getBracketData();
+        const regionOrderForYear = getRegionOrder();
+        const firstFourMappingForYear = getFirstFourMapping();
 
         // Initialize regions (this includes final_four with empty slots)
-        const newRegions = initializeBracket(selectedYear);
+        const newRegions = initializeBracket(selectedYear, bracketDataForYear, regionOrderForYear, firstFourMappingForYear);
         setRegions(newRegions);
 
         // Start with first region
-        if (regionOrder.length > 0) {
-            setCurrentRegionName(regionOrder[0]);
-            const firstRegion = newRegions[regionOrder[0]];
+        if (regionOrderForYear.length > 0) {
+            setCurrentRegionName(regionOrderForYear[0]);
+            const firstRegion = newRegions[regionOrderForYear[0]];
             if (firstRegion) {
                 setRandomizedMatchup(firstRegion.getCurrentMatchup() || []);
             }
@@ -358,7 +365,7 @@ function WinnerSelection() {
         }
 
         try {
-            await saveBracket(user, selectedYear, regions, bracketName);
+            await saveBracket(user, selectedYear, regions, bracketName, false, genderPath);
             setSaved(true);
             alert('Bracket saved successfully!');
         } catch (error) {
@@ -374,7 +381,7 @@ function WinnerSelection() {
         }
 
         try {
-            await publishBracket(user, selectedYear, regions, bracketName, champion);
+            await publishBracket(user, selectedYear, regions, bracketName, champion, genderPath);
             setPublished(true);
             alert('Bracket published to leaderboard!');
         } catch (error) {
@@ -394,7 +401,8 @@ function WinnerSelection() {
 
     // No data for selected year
     const bracketData = getBracketData();
-    if (!bracketData.south.length && !bracketData.east.length) {
+    const firstRegionKey = Object.keys(bracketData)[0];
+    if (!firstRegionKey || !bracketData[firstRegionKey]?.length) {
         return <ComingSoon year={selectedYear} />;
     }
 

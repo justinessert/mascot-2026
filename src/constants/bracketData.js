@@ -1,6 +1,49 @@
 /**
- * Bracket data and constants for Mascot Madness
+ * Bracket Data and Constants for Mascot Madness
  * Migrated from Angular mascot-2025 project
+ * 
+ * =============================================================================
+ * DATA STRUCTURE OVERVIEW
+ * =============================================================================
+ * 
+ * This file contains bracket data for both Men's and Women's NCAA tournaments.
+ * 
+ * MEN'S TOURNAMENT (bracketData22, bracketData23, etc.):
+ * - Each data structure contains a key for each region (south, east, midwest, west)
+ * - Each region has an array of 16 strings representing the 16 seeds (1-16)
+ * - The string is the team name matching a file in public/assets/teams/{name}.jpg
+ * 
+ * WOMEN'S TOURNAMENT (womensBracketData25, womensBracketData26, etc.):
+ * - Regions are named regional_1, regional_2, regional_3, regional_4
+ * - Same structure: 16 strings per region representing seeds 1-16
+ * - UI should parse "regional_1" to display as "Regional 1"
+ * 
+ * PLAY-IN GAMES (First Four):
+ * - When a seed has a play-in game, format: "{team1}_or_{team2}"
+ * - Example: "texas_or_xavier" means Texas vs Xavier played to be that seed
+ * - The firstFourMapping/womensFirstFourMapping stores the actual winner
+ * 
+ * TEAM NAME FORMAT:
+ * - All lowercase, underscores for spaces: "north_carolina", "michigan_state"
+ * - Must match a .jpg file in public/assets/teams/ directory
+ * - Must match an entry in nicknames.js
+ * 
+ * REGION ORDERING
+ * - The ordering of the regions can change from year to year
+ * - The ordering of the regions should reflect a similar strucutre to the bracket where:
+ *     - The first region's winner will play the fourth region's winner
+ *     - The second region's winner will play the third region's winner
+ * - The regions are typically displayed with:
+ *     - The first region in the top left corner of the bracket
+ *     - The second region in the top right corner of the bracket
+ *     - The third region in the bottom right corner of the bracket
+ *     - The fourth region in the bottom left corner of the bracket
+ * 
+ * REFERENCES:
+ * - Men's Tournament: https://www.espn.com/mens-college-basketball/bracket
+ * - Women's Tournament: https://www.espn.com/womens-college-basketball/bracket
+ * 
+ * =============================================================================
  */
 
 export const currentYear = new Date().getFullYear();
@@ -81,6 +124,38 @@ export const bracketData25 = {
     ],
 };
 
+// Women's Tournament Bracket Data (2025+)
+export const womensBracketData25 = {
+    // Regional 1 (#1 UCLA)
+    regional_1: [
+        "ucla", "nc_state", "lsu", "baylor", "ole_miss", "florida_state", "michigan_state", "richmond",
+        "georgia_tech", "harvard", "george_mason", "ball_state", "grand_canyon", "san_diego_state", "vermont", "uc_san_diego_or_southern"
+    ],
+    // Regional 2 (#1 South Carolina)
+    regional_2: [
+        "south_carolina", "duke", "north_carolina", "maryland", "alabama", "west_virginia", "vanderbilt", "utah",
+        "indiana", "oregon", "columbia_or_washington", "green_bay", "norfolk_state", "oregon_state", "lehigh", "tennessee_tech"
+    ],
+    // Regional 3 (#1 Texas)
+    regional_3: [
+        "texas", "tcu", "notre_dame", "ohio_state", "tennessee", "michigan", "louisville", "illinois",
+        "creighton", "nebraska", "iowa_state_or_princeton", "south_florida", "montana_state", "sf_austin", "fdu", "william_mary_or_high_point"
+    ],
+    // Regional 4 (#1 USC)
+    regional_4: [
+        "usc", "uconn", "oklahoma", "kentucky", "kansas_state", "iowa", "oklahoma_state", "california",
+        "mississippi_state", "south_dakota_state", "murray_state", "fairfield", "liberty", "fgcu", "arkansas_state", "unc_greensboro"
+    ],
+};
+
+// Placeholder for 2026 Women's bracket data
+export const womensBracketData26 = {
+    regional_1: [],
+    regional_2: [],
+    regional_3: [],
+    regional_4: [],
+};
+
 // Placeholder for 2026 bracket data - to be filled when tournament is announced
 export const bracketData26 = {
     south: [],
@@ -97,12 +172,24 @@ export const bracketData = {
     2026: bracketData26,
 };
 
+// Women's bracket data (starting from 2025)
+export const womensBracketData = {
+    2025: womensBracketData25,
+    2026: womensBracketData26,
+};
+
 export const regionOrder = {
     2022: ["west", "south", "midwest", "east"],
     2023: ["south", "midwest", "west", "east"],
     2024: ["east", "south", "midwest", "west"],
     2025: ["south", "east", "midwest", "west"],
     2026: ["south", "east", "midwest", "west"], // Update when bracket is announced
+};
+
+// Women's region order (uses numbered regions)
+export const womensRegionOrder = {
+    2025: ["regional_1", "regional_2", "regional_3", "regional_4"],
+    2026: ["regional_1", "regional_2", "regional_3", "regional_4"], // Update when bracket is announced
 };
 
 export const firstFourMapping = {
@@ -134,4 +221,21 @@ export const cutOffTimes = {
     2024: new Date(Date.UTC(2024, 2, 21, 16, 15)),
     2025: new Date(Date.UTC(2025, 2, 20, 16, 15)),
     2026: new Date(Date.UTC(2026, 2, 19, 16, 15)), // Placeholder - update when schedule announced
+};
+
+// Women's First Four Mapping (play-in game winners)
+export const womensFirstFourMapping = {
+    2025: {
+        "uc_san_diego_or_southern": "southern",
+        "columbia_or_washington": "columbia",
+        "iowa_state_or_princeton": "iowa_state",
+        "william_mary_or_high_point": "william_mary",
+    },
+    2026: {},
+};
+
+// Women's tournament cutoff times
+export const womensCutOffTimes = {
+    2025: new Date(Date.UTC(2025, 2, 21, 18, 0)), // Women's First Four starts March 19
+    2026: new Date(Date.UTC(2026, 2, 20, 18, 0)), // Placeholder
 };

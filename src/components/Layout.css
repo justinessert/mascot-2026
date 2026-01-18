@@ -40,29 +40,99 @@
     color: var(--accent-color);
 }
 
-/* Year Selector */
-.year-selector {
+/* Year/Gender Selector */
+.year-gender-selector {
+    position: relative;
     display: flex;
     align-items: center;
 }
 
-.year-selector select {
+.selector-toggle {
     background: var(--primary-bg);
     color: var(--primary-text);
     border: 1px solid #444;
     border-radius: 6px;
-    padding: 6px 12px;
+    padding: 8px 14px;
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.year-selector select:hover {
+.selector-toggle:hover {
+    border-color: var(--accent-color);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.selector-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--secondary-bg);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    z-index: 1001;
+    min-width: 180px;
+}
+
+.gender-toggle {
+    display: flex;
+    gap: 0;
+    margin-bottom: 12px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #444;
+}
+
+.gender-btn {
+    flex: 1;
+    padding: 8px 16px;
+    border: none;
+    background: var(--primary-bg);
+    color: var(--secondary-text);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.gender-btn:first-child {
+    border-right: 1px solid #444;
+}
+
+.gender-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--primary-text);
+}
+
+.gender-btn.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+.year-dropdown {
+    width: 100%;
+    background: var(--primary-bg);
+    color: var(--primary-text);
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.year-dropdown:hover {
     border-color: var(--accent-color);
 }
 
-.year-selector select:focus {
+.year-dropdown:focus {
     outline: none;
     border-color: var(--accent-color);
 }

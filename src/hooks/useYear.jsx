@@ -38,14 +38,22 @@ export function YearProvider({ children }) {
     };
 
     const [selectedYear, setSelectedYear] = useState(getDefaultYear());
+    const [selectedGender, setSelectedGender] = useState('M'); // 'M' for Men, 'W' for Women
 
-    // Get bracket data for the selected year
+    // Get display label for collapsed selector (e.g., "2026 - M")
+    const getDisplayLabel = () => {
+        return `${selectedYear} - ${selectedGender}`;
+    };
+
+    // Get bracket data for the selected year (future: factor in gender)
     const getBracketData = () => {
+        // TODO: When women's data is available, use selectedGender to pick the right dataset
         return bracketData[selectedYear] || bracketData[2025];
     };
 
-    // Get region order for the selected year
+    // Get region order for the selected year (future: factor in gender)
     const getRegionOrder = () => {
+        // TODO: When women's data is available, use selectedGender to pick the right order
         return regionOrder[selectedYear] || regionOrder[2025];
     };
 
@@ -57,7 +65,10 @@ export function YearProvider({ children }) {
     const value = {
         selectedYear,
         setSelectedYear,
+        selectedGender,
+        setSelectedGender,
         availableYears,
+        getDisplayLabel,
         getBracketData,
         getRegionOrder,
         hasBracketData,

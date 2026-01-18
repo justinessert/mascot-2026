@@ -9,11 +9,8 @@ import {
     doc,
     setDoc,
     getDoc,
-    addDoc,
-    collection,
-    query,
-    where,
-    limit,
+    // addDoc, collection, query, where - unused after migration to direct doc fetch
+    Timestamp,
     getDocs
 } from 'firebase/firestore';
 import { db } from './firebase';
@@ -26,20 +23,26 @@ import {
 } from '../constants';
 
 // In-memory storage for bracket state (cleared on refresh, persisted on navigation)
+// Key format: `${gender}_${year}`
 const tempBracketStorage = {};
 
-export function saveTemporaryBracket(year, data) {
-    tempBracketStorage[year] = data;
+export function saveTemporaryBracket(year, data, gender = 'men') {
+    const key = `${gender}_${year}`;
+    tempBracketStorage[key] = data;
 }
 
-export function loadTemporaryBracket(year) {
-    return tempBracketStorage[year] || null;
+export function loadTemporaryBracket(year, gender = 'men') {
+    const key = `${gender}_${year}`;
+    return tempBracketStorage[key] || null;
 }
 
 /**
  * Map team name through First Four if applicable
  */
-function mapName(teamName, year) {
+function mapName(teamName, year, mapping) {
+    if (mapping) {
+        return mapping[teamName] || teamName;
+    }
     return firstFourMapping[year]?.[teamName] || teamName;
 }
 
@@ -222,15 +225,32 @@ export function loadRegions(bracketDataObj, year) {
 
 /**
  * Initialize a fresh bracket for a given year
+ * @param {number} year - Tournament year (used for First Four mapping)
+ * @param {Object} bracketDataForYear - The bracket data object for the selected year/gender
+ * @param {Array} regionOrderForYear - The region order array for the selected year/gender
  */
-export function initializeBracket(year) {
+/**
+ * Initialize a fresh bracket for a given year
+ * @param {number} year - Tournament year (used for First Four mapping fallback)
+ * @param {Object} bracketDataForYear - The bracket data object for the selected year/gender
+ * @param {Array} regionOrderForYear - The region order array for the selected year/gender
+ * @param {Object} firstFourMappingForYear - The first four mapping for the selected year/gender
+ */
+export function initializeBracket(year, bracketDataForYear, regionOrderForYear, firstFourMappingForYear) {
     const regions = {};
 
-    for (let regionName of regionOrder[year]) {
+    // Use provided data or fallback to men's default
+    const dataToUse = bracketDataForYear || bracketData[year];
+    const orderToUse = regionOrderForYear || regionOrder[year];
+    // Note: mapName handles the fallback if mapping is null, but we can also be explicit here
+    // However, mapName looks at global firstFourMapping[year] if mapping is not passed.
+    // If we pass a mapping (even empty object), it uses it.
+
+    for (let regionName of orderToUse) {
         regions[regionName] = new Region(regionName);
         regions[regionName].initializeBracket(
-            bracketData[year][regionName].map(
-                (name, index) => new Team(mapName(name, year), index + 1)
+            dataToUse[regionName].map(
+                (name, index) => new Team(mapName(name, year, firstFourMappingForYear), index + 1)
             )
         );
     }
@@ -243,13 +263,19 @@ export function initializeBracket(year) {
 
 /**
  * Save bracket to Firebase
+ * @param {Object} user - Firebase user object
+ * @param {number} year - Tournament year
+ * @param {Object} regions - Region objects
+ * @param {string} name - Bracket name
+ * @param {boolean} published - Whether bracket is published
+ * @param {string} gender - 'men' or 'women'
  */
-export async function saveBracket(user, year, regions, name, published = false) {
+export async function saveBracket(user, year, regions, name, published = false, gender = 'men') {
     if (!user) {
         throw new Error('User not authenticated');
     }
 
-    const userBracketRef = doc(db, `brackets/${year}/${user.uid}/data`);
+    const userBracketRef = doc(db, `brackets/${gender}/years/${year}/users/${user.uid}`);
 
     const regionsDict = Object.fromEntries(
         Object.entries(regions).map(([key, region]) => [key, region ? region.toDict() : null])
@@ -266,13 +292,16 @@ export async function saveBracket(user, year, regions, name, published = false) 
 
 /**
  * Load bracket from Firebase
+ * @param {Object} user - Firebase user object
+ * @param {number} year - Tournament year
+ * @param {string} gender - 'men' or 'women'
  */
-export async function loadBracket(user, year) {
+export async function loadBracket(user, year, gender = 'men') {
     if (!user) {
         return null;
     }
 
-    const userBracketRef = doc(db, `brackets/${year}/${user.uid}/data`);
+    const userBracketRef = doc(db, `brackets/${gender}/years/${year}/users/${user.uid}`);
     const snapshot = await getDoc(userBracketRef);
 
     if (snapshot.exists()) {
@@ -289,9 +318,12 @@ export async function loadBracket(user, year) {
 
 /**
  * Load bracket by user ID (for viewing shared brackets)
+ * @param {string} userId - User ID
+ * @param {number} year - Tournament year
+ * @param {string} gender - 'men' or 'women'
  */
-export async function loadBracketByUserId(userId, year) {
-    const bracketRef = doc(db, `brackets/${year}/${userId}/data`);
+export async function loadBracketByUserId(userId, year, gender = 'men') {
+    const bracketRef = doc(db, `brackets/${gender}/years/${year}/users/${userId}`);
     const snapshot = await getDoc(bracketRef);
 
     if (snapshot.exists()) {
@@ -308,15 +340,23 @@ export async function loadBracketByUserId(userId, year) {
 
 /**
  * Publish bracket to leaderboard
+ * Uses user.uid as document ID to enforce one entry per user per year
+ * @param {Object} user - Firebase user object
+ * @param {number} year - Tournament year
+ * @param {Object} regions - Region objects
+ * @param {string} name - Bracket name
+ * @param {Object} champion - Champion team
+ * @param {string} gender - 'men' or 'women'
  */
-export async function publishBracket(user, year, regions, name, champion) {
+export async function publishBracket(user, year, regions, name, champion, gender = 'men') {
     if (!user) {
         throw new Error('User not authenticated');
     }
 
-    const leaderboardRef = collection(db, `leaderboard/${year}/data`);
+    // Use doc() with user.uid as the document ID (enforces one entry per user per year)
+    const leaderboardEntryRef = doc(db, `leaderboard/${gender}/years/${year}/entries/${user.uid}`);
 
-    await addDoc(leaderboardRef, {
+    await setDoc(leaderboardEntryRef, {
         bracketId: user.uid,
         bracketName: name,
         userName: user.displayName || 'Anonymous',
@@ -326,7 +366,7 @@ export async function publishBracket(user, year, regions, name, champion) {
     });
 
     // Mark as published in saved bracket
-    await saveBracket(user, year, regions, name, true);
+    await saveBracket(user, year, regions, name, true, gender);
 }
 
 /**
@@ -345,29 +385,16 @@ export async function getUserBracketHistory(user) {
         if (savedBracket) {
             let score = 0;
 
-            // 2. If published, try to get score from leaderboard
+            // 2. If published, try to get score from leaderboard (direct fetch by userId)
             if (savedBracket.published) {
                 try {
-                    const leaderboardRef = collection(db, `leaderboard/${year}/data`);
-                    // Fetch all entries for this user to ensure we get the best score 
-                    // (in case of duplicates from multiple publishes)
-                    const q = query(
-                        leaderboardRef,
-                        where("bracketId", "==", user.uid)
-                    );
-                    const querySnapshot = await getDocs(q);
+                    // Doc ID is userId, so we can fetch directly
+                    const leaderboardEntryRef = doc(db, `leaderboard/men/years/${year}/entries/${user.uid}`);
+                    const entryDoc = await getDoc(leaderboardEntryRef);
 
-                    if (!querySnapshot.empty) {
-                        // Find the entry with the highest score
-                        let maxEntryScore = 0;
-                        querySnapshot.forEach(doc => {
-                            const data = doc.data();
-                            const entryScore = data.score || 0;
-                            if (entryScore > maxEntryScore) {
-                                maxEntryScore = entryScore;
-                            }
-                        });
-                        score = maxEntryScore;
+                    if (entryDoc.exists()) {
+                        const data = entryDoc.data();
+                        score = data.score || 0;
                     }
                 } catch (err) {
                     console.error(`Error fetching leaderboard for ${year}:`, err);

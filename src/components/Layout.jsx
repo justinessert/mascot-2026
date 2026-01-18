@@ -11,21 +11,32 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { useYear } from '../hooks/useYear.jsx';
+import { useTournament } from '../hooks/useTournament.jsx';
 import './Layout.css';
 
 function Layout() {
     const [menuOpen, setMenuOpen] = useState(false);
+    const [selectorOpen, setSelectorOpen] = useState(false);
     const navigate = useNavigate();
 
     // Get user and logout function from our auth hook
     const { user, logout } = useAuth();
 
-    // Get year selection from our year hook
-    const { selectedYear, setSelectedYear, availableYears } = useYear();
+    // Get year/gender selection from our year hook
+    const {
+        selectedYear,
+        setSelectedYear,
+        selectedGender,
+        setSelectedGender,
+        availableYears,
+        getDisplayLabel
+    } = useTournament();
 
     const toggleMenu = () => setMenuOpen(!menuOpen);
     const closeMenu = () => setMenuOpen(false);
+
+    const toggleSelector = () => setSelectorOpen(!selectorOpen);
+    const closeSelector = () => setSelectorOpen(false);
 
     const handleNavigation = (path) => {
         navigate(path);
@@ -46,6 +57,18 @@ function Layout() {
         setSelectedYear(Number(e.target.value));
     };
 
+    const handleGenderChange = (gender) => {
+        setSelectedGender(gender);
+    };
+
+    // Close selector when clicking outside
+    const handleSelectorBlur = (e) => {
+        // Only close if the click is outside the selector
+        if (!e.currentTarget.contains(e.relatedTarget)) {
+            closeSelector();
+        }
+    };
+
     return (
         <div className="app-container">
             {/* Navigation Header */}
@@ -55,19 +78,50 @@ function Layout() {
                         🏀 Mascot Madness
                     </Link>
 
-                    {/* Year Selector */}
-                    <div className="year-selector">
-                        <select
-                            value={selectedYear}
-                            onChange={handleYearChange}
-                            aria-label="Select tournament year"
+                    {/* Year/Gender Selector */}
+                    <div
+                        className="year-gender-selector"
+                        onBlur={handleSelectorBlur}
+                        tabIndex={-1}
+                    >
+                        <button
+                            className="selector-toggle"
+                            onClick={toggleSelector}
+                            aria-label="Select tournament year and gender"
                         >
-                            {availableYears.map(year => (
-                                <option key={year} value={year}>
-                                    {year}
-                                </option>
-                            ))}
-                        </select>
+                            {getDisplayLabel()} ▾
+                        </button>
+
+                        {selectorOpen && (
+                            <div className="selector-panel">
+                                <div className="gender-toggle">
+                                    <button
+                                        className={`gender-btn ${selectedGender === 'M' ? 'active' : ''}`}
+                                        onClick={() => handleGenderChange('M')}
+                                    >
+                                        Men
+                                    </button>
+                                    <button
+                                        className={`gender-btn ${selectedGender === 'W' ? 'active' : ''}`}
+                                        onClick={() => handleGenderChange('W')}
+                                    >
+                                        Women
+                                    </button>
+                                </div>
+                                <select
+                                    value={selectedYear}
+                                    onChange={handleYearChange}
+                                    aria-label="Select tournament year"
+                                    className="year-dropdown"
+                                >
+                                    {availableYears.map(year => (
+                                        <option key={year} value={year}>
+                                            {year}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
 
                     {/* Mobile menu button */}

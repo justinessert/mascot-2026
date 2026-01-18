@@ -12,7 +12,7 @@ import BracketSegment from './BracketSegment';
 import Matchup from './Matchup';
 import '../pages/FullBracket.css'; // Reuse existing styles
 
-function FullBracketDisplay({ regions, bracketName, userName, year, onBack, backLink, backLinkText, children }) {
+function FullBracketDisplay({ regions, bracketName, userName, year, onBack, backLink, backLinkText, regionOrder: providedRegionOrder, children }) {
     const numericYear = parseInt(year, 10);
 
     // Get region bracket data
@@ -45,7 +45,8 @@ function FullBracketDisplay({ regions, bracketName, userName, year, onBack, back
     };
 
     // Get left and right regions based on year's order
-    const order = regionOrder[numericYear] || regionOrder[2025];
+    // Use provided order if available, otherwise fallback to men's default
+    const order = providedRegionOrder || regionOrder[numericYear] || regionOrder[2025];
     const leftRegions = [order[0], order[3]];
     const rightRegions = [order[1], order[2]];
 

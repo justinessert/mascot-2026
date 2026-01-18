@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useYear } from '../hooks/useYear.jsx';
+import { useTournament } from '../hooks/useTournament.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { formatTeamName, getMascotName } from '../constants/nicknames';
 import { initializeBracket, loadBracket, Region, loadTemporaryBracket } from '../services/bracketService';
@@ -15,22 +15,25 @@ import FullBracketDisplay from '../components/FullBracketDisplay';
 import './FullBracket.css';
 
 function FullBracket() {
-    const { selectedYear, getBracketData } = useYear();
+    const { selectedYear, selectedGender, getBracketData, getRegionOrder, getFirstFourMapping } = useTournament();
     const { user } = useAuth();
+
+    // Convert UI gender ('M'/'W') to service gender ('men'/'women')
+    const genderPath = selectedGender === 'W' ? 'women' : 'men';
 
     const [regions, setRegions] = useState({});
     const [loading, setLoading] = useState(true);
     const [bracketName, setBracketName] = useState('');
 
-    // Load bracket on mount and when year/user changes
+    // Load bracket on mount and when year/gender/user changes
     useEffect(() => {
         loadBracketData();
-    }, [selectedYear, user]);
+    }, [selectedYear, selectedGender, user]);
 
     // Load bracket state from memory
     const loadFromMemory = () => {
         try {
-            const memoryData = loadTemporaryBracket(selectedYear);
+            const memoryData = loadTemporaryBracket(selectedYear, genderPath);
             if (!memoryData) return null;
 
             const loadedRegions = {};
@@ -55,8 +58,9 @@ function FullBracket() {
 
         const bracketData = getBracketData();
 
-        // Check if we have data for this year
-        if (!bracketData.south.length && !bracketData.east.length) {
+        // Check if we have data for this year (first region has teams)
+        const firstRegionKey = Object.keys(bracketData)[0];
+        if (!firstRegionKey || !bracketData[firstRegionKey]?.length) {
             setLoading(false);
             return;
         }
@@ -64,7 +68,7 @@ function FullBracket() {
         // First, try to load saved bracket from Firebase if user is logged in
         if (user) {
             try {
-                const savedBracket = await loadBracket(user, selectedYear);
+                const savedBracket = await loadBracket(user, selectedYear, genderPath);
                 if (savedBracket) {
                     setRegions(savedBracket.regions);
                     setBracketName(savedBracket.name || '');
@@ -86,7 +90,10 @@ function FullBracket() {
         }
 
         // No saved bracket anywhere - create empty structure
-        const newRegions = initializeBracket(selectedYear);
+        const bracketDataForYear = getBracketData();
+        const regionOrderForYear = getRegionOrder();
+        const firstFourMappingForYear = getFirstFourMapping();
+        const newRegions = initializeBracket(selectedYear, bracketDataForYear, regionOrderForYear, firstFourMappingForYear);
         setRegions(newRegions);
         setBracketName('');
         setLoading(false);
@@ -103,7 +110,8 @@ function FullBracket() {
     }
 
     const bracketData = getBracketData();
-    if (!bracketData.south.length && !bracketData.east.length) {
+    const firstRegionKey = Object.keys(bracketData)[0];
+    if (!firstRegionKey || !bracketData[firstRegionKey]?.length) {
         return <ComingSoon year={selectedYear} />;
     }
 
@@ -112,6 +120,7 @@ function FullBracket() {
             regions={regions}
             bracketName={bracketName}
             year={selectedYear}
+            regionOrder={getRegionOrder()}
         // No back link for main bracket view
         >
             {!user && (

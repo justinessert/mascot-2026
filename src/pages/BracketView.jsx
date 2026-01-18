@@ -9,13 +9,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { loadBracketByUserId } from '../services/bracketService';
+import { regionOrder, womensRegionOrder } from '../constants/bracketData';
 import FullBracketDisplay from '../components/FullBracketDisplay';
 import './FullBracket.css'; // Reuse FullBracket styles
 
 function BracketView() {
-    const { year, uuid } = useParams();
+    const { year, uuid, gender } = useParams();
     const location = useLocation();
     const numericYear = parseInt(year, 10);
+
+    // Convert gender from URL (default to 'men' if not provided)
+    const genderPath = gender === 'women' ? 'women' : 'men';
 
     const [regions, setRegions] = useState({});
     const [loading, setLoading] = useState(true);
@@ -31,14 +35,14 @@ function BracketView() {
     // Load the shared bracket on mount
     useEffect(() => {
         loadSharedBracket();
-    }, [year, uuid]);
+    }, [year, uuid, gender]);
 
     const loadSharedBracket = async () => {
         setLoading(true);
         setError(null);
 
         try {
-            const bracket = await loadBracketByUserId(uuid, numericYear);
+            const bracket = await loadBracketByUserId(uuid, numericYear, genderPath);
             if (bracket) {
                 setRegions(bracket.regions);
                 setBracketName(bracket.name || 'Unnamed Bracket');
@@ -74,14 +78,20 @@ function BracketView() {
         );
     }
 
+    const currentRegionOrder = genderPath === 'women'
+        ? (womensRegionOrder[numericYear] || womensRegionOrder[2025])
+        : (regionOrder[numericYear] || regionOrder[2025]);
+
     return (
         <FullBracketDisplay
             regions={regions}
             bracketName={bracketName}
             userName={userName}
             year={year}
+            onBack={() => { }} // Handle back logic if needed or rely on Link
             backLink={backLink}
             backLinkText={backLinkText}
+            regionOrder={currentRegionOrder}
         />
     );
 }

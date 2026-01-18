@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { useYear } from '../hooks/useYear.jsx';
+import { useTournament } from '../hooks/useTournament.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { Team } from '../services/bracketService';
 import { cutOffTimes } from '../constants/bracketData';
@@ -19,8 +19,11 @@ import './Leaderboard.css';
 
 function Leaderboard() {
     const navigate = useNavigate();
-    const { selectedYear, hasBracketData } = useYear();
+    const { selectedYear, selectedGender, hasBracketData } = useTournament();
     const { user } = useAuth();
+
+    // Convert UI gender ('M'/'W') to service gender ('men'/'women')
+    const genderPath = selectedGender === 'W' ? 'women' : 'men';
 
     const [brackets, setBrackets] = useState([]);
     const [userBracket, setUserBracket] = useState(null);
@@ -37,13 +40,13 @@ function Leaderboard() {
     // Load leaderboard data
     useEffect(() => {
         loadLeaderboard();
-    }, [selectedYear, user]);
+    }, [selectedYear, selectedGender, user]);
 
     const loadLeaderboard = async () => {
         setLoading(true);
 
         try {
-            const leaderboardRef = collection(db, `leaderboard/${selectedYear}/data`);
+            const leaderboardRef = collection(db, `leaderboard/${genderPath}/years/${selectedYear}/entries`);
             const snapshot = await getDocs(leaderboardRef);
 
             const bracketList = [];

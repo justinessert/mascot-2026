@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useYear } from '../hooks/useYear.jsx';
+import { useTournament } from '../hooks/useTournament.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { loadBracket } from '../services/bracketService';
 import HowItWorks from '../components/HowItWorks';
@@ -11,17 +11,20 @@ import './Home.css';
  * Entry point for the application
  */
 function Home() {
-    const { selectedYear } = useYear();
+    const { selectedYear, selectedGender } = useTournament();
     const { user } = useAuth();
     const [hasBracket, setHasBracket] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // Convert UI gender ('M'/'W') to service gender ('men'/'women')
+    const genderPath = selectedGender === 'W' ? 'women' : 'men';
 
     // Check if user has a saved bracket for the selected year
     useEffect(() => {
         const checkBracket = async () => {
             if (user) {
                 try {
-                    const savedBracket = await loadBracket(user, selectedYear);
+                    const savedBracket = await loadBracket(user, selectedYear, genderPath);
                     setHasBracket(!!savedBracket);
                 } catch (error) {
                     console.error('Error checking bracket:', error);
@@ -33,7 +36,7 @@ function Home() {
             setLoading(false);
         };
         checkBracket();
-    }, [user, selectedYear]);
+    }, [user, selectedYear, selectedGender]);
 
     return (
         <div className="home-container">

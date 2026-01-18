@@ -39,6 +39,7 @@ function WinnerSelection() {
     const [loading, setLoading] = useState(true);
     const isInitializing = useRef(false);
     const [hasOtherGenderBracket, setHasOtherGenderBracket] = useState(true); // Default true to hide prompts until checked
+    const [expandedImage, setExpandedImage] = useState(null); // For magnifying glass popup
 
     // Check if user has the OTHER gender bracket for this year
     useEffect(() => {
@@ -487,6 +488,26 @@ function WinnerSelection() {
     // Get current region champion for showing region winner state
     const regionChamp = getCurrentRegionChampion();
 
+    // Helper to render image with magnifier
+    const RenderImageWithMagnifier = ({ src, alt, className }) => (
+        <div className={`image-container ${className || ''}`}>
+            <img src={src} alt={alt} />
+            <div
+                className="magnify-icon"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedImage(src);
+                }}
+                title="Expand Image"
+            >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </div>
+        </div>
+    );
+
     // Main matchup selection view
     return (
         <div className="winner-selection-container">
@@ -500,7 +521,11 @@ function WinnerSelection() {
                 <div className="region-winner-display">
                     <h3>🏆 {formatTeamName(currentRegionName)} Region Winner</h3>
                     {regionChamp.image && (
-                        <img src={regionChamp.image} alt={regionChamp.name} className="region-winner-image" />
+                        <RenderImageWithMagnifier
+                            src={regionChamp.image}
+                            alt={regionChamp.name}
+                            className="region-winner-image"
+                        />
                     )}
                     <p className="mascot-name">{formatMascotName(regionChamp.name)}</p>
                     <p className="team-name">{formatTeamName(regionChamp.name)}</p>
@@ -533,7 +558,7 @@ function WinnerSelection() {
                                                 <p className="team-name">{subTeams[0].displayName}</p>
                                                 <p className="mascot-name">{subTeams[0].mascot}</p>
                                             </div>
-                                            <img src={subTeams[0].image} alt={subTeams[0].name} />
+                                            <RenderImageWithMagnifier src={subTeams[0].image} alt={subTeams[0].name} />
                                         </div>
                                         <div className="split-divider"></div>
                                         <div className="sub-team bottom">
@@ -541,7 +566,7 @@ function WinnerSelection() {
                                                 <p className="team-name">{subTeams[1].displayName}</p>
                                                 <p className="mascot-name">{subTeams[1].mascot}</p>
                                             </div>
-                                            <img src={subTeams[1].image} alt={subTeams[1].name} />
+                                            <RenderImageWithMagnifier src={subTeams[1].image} alt={subTeams[1].name} />
                                         </div>
                                     </div>
                                 );
@@ -553,7 +578,7 @@ function WinnerSelection() {
                                 onClick={() => selectWinner(team)}
                             >
                                 {team.image && (
-                                    <img src={team.image} alt={team.name} />
+                                    <RenderImageWithMagnifier src={team.image} alt={team.name} />
                                 )}
                                 <p className="mascot-name">{formatMascotName(team.name)}</p>
                                 <p className="team-name">{formatTeamName(team.name)}</p>
@@ -629,6 +654,20 @@ function WinnerSelection() {
                     );
                 })}
             </div>
+            {/* Expanded Image Modal */}
+            {expandedImage && (
+                <div className="image-modal-overlay" onClick={() => setExpandedImage(null)}>
+                    <div className="image-modal-content" onClick={e => e.stopPropagation()}>
+                        <button className="close-modal-btn" onClick={() => setExpandedImage(null)}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                        <img src={expandedImage} alt="Expanded Mascot" className="modal-image" />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

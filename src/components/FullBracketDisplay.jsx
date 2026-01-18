@@ -57,7 +57,7 @@ function FullBracketDisplay({ regions, bracketName, userName, year, onBack, back
         <div className="full-bracket-container">
             {/* Header */}
             <div className="shared-bracket-header">
-                <h2>{`${bracketName} - ${year}` || `${year} Bracket`}</h2>
+                <h2>{bracketName ? `${bracketName} - ${year}` : `${year} Bracket`}</h2>
                 {userName && <p className="bracket-owner">by {userName}</p>}
 
                 {backLink && (

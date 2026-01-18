@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useNavigate, Link } from 'react-router-dom';
 import { getUserBracketHistory } from '../services/bracketService';
+import HistoryTable from '../components/HistoryTable';
 import './Profile.css';
-import '../pages/Leaderboard.css'; // Reuse table styles
 
 function Profile() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const [history, setHistory] = useState([]);
+    const [menHistory, setMenHistory] = useState([]);
+    const [womenHistory, setWomenHistory] = useState([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -20,8 +21,12 @@ function Profile() {
     const loadHistory = async () => {
         setLoading(true);
         try {
-            const data = await getUserBracketHistory(user);
-            setHistory(data);
+            const [menData, womenData] = await Promise.all([
+                getUserBracketHistory(user, 'men'),
+                getUserBracketHistory(user, 'women')
+            ]);
+            setMenHistory(menData);
+            setWomenHistory(womenData);
         } catch (error) {
             console.error('Error loading history:', error);
         }
@@ -71,45 +76,19 @@ function Profile() {
                 </div>
 
                 <div className="profile-history">
-                    <h3>Bracket History</h3>
-                    {loading && <div className="loading-text">Loading history...</div>}
+                    <HistoryTable
+                        title="Men's Tournament History"
+                        data={menHistory}
+                        loading={loading}
+                        emptyMessage="No men's brackets created yet."
+                    />
 
-                    {!loading && history.length === 0 && (
-                        <p className="no-history">No brackets created yet.</p>
-                    )}
-
-                    {!loading && history.length > 0 && (
-                        <div className="table-wrapper">
-                            <table className="leaderboard-table profile-table">
-                                <thead>
-                                    <tr>
-                                        <th>Year</th>
-                                        <th>Champion</th>
-                                        <th>Bracket Name</th>
-                                        <th>Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {history.map((bracket) => (
-                                        <tr
-                                            key={bracket.year}
-                                            onClick={() => navigate(`/bracket/${bracket.year}/${bracket.bracketId}`, { state: { from: 'profile' } })}
-                                            className="clickable"
-                                        >
-                                            <td className="year-cell">{bracket.year}</td>
-                                            <td className="champion-cell">
-                                                {bracket.champion?.image && (
-                                                    <img src={bracket.champion.image} alt={bracket.champion.name} />
-                                                )}
-                                            </td>
-                                            <td>{bracket.bracketName}</td>
-                                            <td className="score-cell">{bracket.score}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                    <HistoryTable
+                        title="Women's Tournament History"
+                        data={womenHistory}
+                        loading={loading}
+                        emptyMessage="No women's brackets created yet."
+                    />
                 </div>
 
                 <div className="profile-actions">

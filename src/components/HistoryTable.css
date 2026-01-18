@@ -1,0 +1,125 @@
+/* History/Leaderboard Table Styles */
+
+.history-table-container {
+    margin-top: 20px;
+}
+
+/* Loading and Empty States */
+.loading-text,
+.no-history {
+    text-align: center;
+    padding: 30px;
+    background: var(--secondary-bg);
+    border-radius: 12px;
+    color: var(--secondary-text);
+    font-style: italic;
+}
+
+/* Table Wrapper */
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    background: var(--secondary-bg);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Base Table */
+.history-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.95rem;
+}
+
+.history-table thead {
+    background: #2d3748;
+    /* Darker header background */
+}
+
+.history-table th {
+    padding: 16px;
+    text-align: left;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--secondary-text);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+}
+
+.history-table td {
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    vertical-align: middle;
+}
+
+/* Row Styling */
+.history-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.history-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.history-table tbody tr.clickable {
+    cursor: pointer;
+}
+
+.history-table tbody tr.clickable:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Cell Specifics */
+.year-cell {
+    font-weight: 600;
+    color: var(--accent-color);
+}
+
+.score-cell {
+    font-weight: 700;
+    color: var(--accent-color);
+    text-align: right;
+    /* Align numbers right */
+    padding-right: 24px;
+}
+
+/* Ensure header matches */
+.history-table th:last-child {
+    text-align: right;
+    padding-right: 24px;
+}
+
+.champion-cell {
+    text-align: center;
+    width: 60px;
+}
+
+/* Ensure header matches */
+.history-table th:nth-child(2) {
+    text-align: center;
+}
+
+.champion-cell img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+
+    .history-table th,
+    .history-table td {
+        padding: 12px 8px;
+        font-size: 0.85rem;
+    }
+
+    .champion-cell img {
+        width: 30px;
+        height: 30px;
+    }
+}

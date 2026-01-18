@@ -372,7 +372,7 @@ export async function publishBracket(user, year, regions, name, champion, gender
 /**
  * Get user's bracket history across all years
  */
-export async function getUserBracketHistory(user) {
+export async function getUserBracketHistory(user, gender = 'men') {
     if (!user) return [];
 
     const years = Object.keys(bracketData).sort((a, b) => b - a); // Descending years
@@ -380,7 +380,7 @@ export async function getUserBracketHistory(user) {
 
     for (const year of years) {
         // 1. Try to load saved bracket
-        const savedBracket = await loadBracket(user, year);
+        const savedBracket = await loadBracket(user, year, gender);
 
         if (savedBracket) {
             let score = 0;
@@ -389,7 +389,8 @@ export async function getUserBracketHistory(user) {
             if (savedBracket.published) {
                 try {
                     // Doc ID is userId, so we can fetch directly
-                    const leaderboardEntryRef = doc(db, `leaderboard/men/years/${year}/entries/${user.uid}`);
+                    // Use gender in path
+                    const leaderboardEntryRef = doc(db, `leaderboard/${gender}/years/${year}/entries/${user.uid}`);
                     const entryDoc = await getDoc(leaderboardEntryRef);
 
                     if (entryDoc.exists()) {

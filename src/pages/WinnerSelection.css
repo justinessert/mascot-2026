@@ -286,6 +286,23 @@
     font-size: 0.9rem;
 }
 
+/* Cross-Gender Promotion */
+.cross-gender-promo {
+    margin-top: 24px;
+    padding: 20px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid var(--accent-color);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.cross-gender-promo p {
+    margin-bottom: 12px;
+    color: var(--primary-text);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .matchup {

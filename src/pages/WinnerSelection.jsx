@@ -33,7 +33,7 @@ function formatMascotName(teamKey) {
 
 function WinnerSelection() {
     const navigate = useNavigate();
-    const { selectedYear, selectedGender, getBracketData, getRegionOrder, getFirstFourMapping } = useTournament();
+    const { selectedYear, selectedGender, setSelectedGender, getBracketData, getRegionOrder, getFirstFourMapping } = useTournament();
     const { user } = useAuth();
 
     // Convert UI gender ('M'/'W') to service gender ('men'/'women')
@@ -49,6 +49,30 @@ function WinnerSelection() {
     const [published, setPublished] = useState(false);
     const [loading, setLoading] = useState(true);
     const isInitializing = useRef(false);
+    const [hasOtherGenderBracket, setHasOtherGenderBracket] = useState(true); // Default true to hide prompts until checked
+
+    // Check if user has the OTHER gender bracket for this year
+    useEffect(() => {
+        const checkOtherGender = async () => {
+            if (user && champion) {
+                // Determine opposite gender path
+                const otherGenderPath = selectedGender === 'W' ? 'men' : 'women';
+                try {
+                    const otherBracket = await loadBracket(user, selectedYear, otherGenderPath);
+                    setHasOtherGenderBracket(!!otherBracket);
+                } catch (error) {
+                    console.error('Error checking other gender bracket:', error);
+                }
+            }
+        };
+        checkOtherGender();
+    }, [user, champion, selectedYear, selectedGender]);
+
+    const handleCreateOtherGender = () => {
+        const newGender = selectedGender === 'M' ? 'W' : 'M';
+        setSelectedGender(newGender);
+        // The change in selectedGender will trigger the main useEffect to re-initialize the bracket
+    };
 
     // Save bracket state to memory
     const saveToMemory = (regionsData, name, regionName, matchup) => {
@@ -470,6 +494,21 @@ function WinnerSelection() {
                                 </>
                             )}
                         </div>
+
+                        {/* Cross-Gender Promotion */}
+                        {user && !hasOtherGenderBracket && (
+                            <div className="cross-gender-promo">
+                                <p>You haven't filled out a {selectedGender === 'M' ? "Women's" : "Men's"} bracket yet!</p>
+                                <p>First, save and/or publish your current bracket and then you can create a {selectedGender === 'M' ? "Women's" : "Men's"} bracket.</p>
+                                <button
+                                    onClick={handleCreateOtherGender}
+                                    className="create-bracket-btn"
+                                    style={{ marginTop: '10px', width: '100%' }}
+                                >
+                                    Create {selectedGender === 'M' ? "Women's" : "Men's"} Bracket
+                                </button>
+                            </div>
+                        )}
 
                         {!user && (
                             <div className="info-banner">

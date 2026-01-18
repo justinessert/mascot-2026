@@ -52,6 +52,11 @@
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     border: 2px solid transparent;
+    height: 350px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .team-card:hover {
@@ -159,6 +164,66 @@
     font-size: 1.3rem;
     font-weight: 700;
     margin-bottom: 4px;
+}
+
+/* Split Team Card (Play-In Games) */
+.split-team-card {
+    padding: 0;
+    /* Remove default padding to let subs fill */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* Ensure rounded corners */
+    justify-content: space-between;
+    height: 350px;
+}
+
+.sub-team {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    transition: background 0.2s;
+}
+
+.sub-team-info {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+    /* Allow text to take available space */
+    padding-right: 10px;
+}
+
+.sub-team img {
+    width: 90px;
+    height: 90px;
+    margin: 0;
+    /* Reset default card mg img margin */
+    object-fit: contain;
+}
+
+.sub-team .team-name {
+    font-size: 1rem;
+    margin-bottom: 2px;
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+.sub-team .mascot-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--primary-text);
+    margin-bottom: 0;
+}
+
+.split-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    width: 100%;
+    margin: 0;
 }
 
 .region-winner-display .team-name {
@@ -284,6 +349,40 @@
     border-radius: 6px;
     margin-top: 20px;
     font-size: 0.9rem;
+}
+
+/* Play-In Game Info Box */
+.play-in-info {
+    max-width: 600px;
+    margin: 30px auto 0;
+    padding: 20px;
+    background: rgba(59, 130, 246, 0.05);
+    /* Very subtle blue tint */
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 12px;
+    text-align: left;
+    color: var(--secondary-text);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.play-in-info p {
+    margin-bottom: 12px;
+}
+
+.play-in-info p:last-child {
+    margin-bottom: 0;
+}
+
+.play-in-info strong {
+    color: var(--primary-text);
+    font-weight: 600;
+}
+
+.play-in-info .cutoff-note {
+    font-style: italic;
+    color: var(--accent-color);
+    margin-top: 8px;
 }
 
 /* Cross-Gender Promotion */

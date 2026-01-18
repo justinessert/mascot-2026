@@ -14,22 +14,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTournament } from '../hooks/useTournament.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { getMascotName, formatTeamName } from '../constants/nicknames';
+import { bracketData, cutOffTimes, regionOrder, womensBracketData, womensCutOffTimes } from '../constants/bracketData';
+import { getMascotName, formatTeamName, formatMascotName } from '../constants/nicknames';
 import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket } from '../services/bracketService';
 import ComingSoon from '../components/ComingSoon';
 import './WinnerSelection.css';
-
-/**
- * Capitalize mascot name (title case)
- * e.g., "crimson tide" -> "Crimson Tide"
- */
-function formatMascotName(teamKey) {
-    const mascot = getMascotName(teamKey);
-    return mascot
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-}
 
 function WinnerSelection() {
     const navigate = useNavigate();
@@ -328,32 +317,6 @@ function WinnerSelection() {
         saveToMemory(newRegions, bracketName, nextRegionName, nextMatchup);
     };
 
-    // // Move to the next incomplete region
-    // const moveToNextRegion = (regionChampion) => {
-    //     const regionOrder = [...getRegionOrder(), 'final_four'];
-
-    //     // Add region champion to final four if not already final four
-    //     if (currentRegionName !== 'final_four') {
-    //         const finalFour = regions.final_four;
-    //         if (finalFour) {
-    //             finalFour.addTeam(regionChampion);
-    //         }
-    //     }
-
-    //     // Find next incomplete region
-    //     for (const regionName of regionOrder) {
-    //         const region = regions[regionName];
-    //         if (region && !region.getChampion()) {
-    //             setCurrentRegionName(regionName);
-    //             setRandomizedMatchup(region.getCurrentMatchup() || []);
-    //             return;
-    //         }
-    //     }
-
-    //     // All regions complete - we have a champion!
-    //     setChampion(regions.final_four?.getChampion());
-    // };
-
     // Get progress for a specific region
     const getRegionProgress = (regionName) => {
         const region = regions[regionName];
@@ -548,30 +511,102 @@ function WinnerSelection() {
             {/* Show matchup if region is not complete */}
             {!regionChamp && currentMatchup.length === 2 && (
                 <div className="matchup">
-                    <div
-                        className="team-card"
-                        onClick={() => selectWinner(currentMatchup[0])}
-                    >
-                        {currentMatchup[0].image && (
-                            <img src={currentMatchup[0].image} alt={currentMatchup[0].name} />
-                        )}
-                        <p className="mascot-name">{formatMascotName(currentMatchup[0].name)}</p>
-                        <p className="team-name">{formatTeamName(currentMatchup[0].name)}</p>
-                    </div>
+                    {currentMatchup.map((team, index) => {
+                        const isPlayIn = team.name.includes('_or_');
+                        const cardContent = isPlayIn ? (
+                            (() => {
+                                const subTeamNames = team.name.split('_or_');
+                                const subTeams = subTeamNames.map(name => ({
+                                    name,
+                                    displayName: formatTeamName(name),
+                                    mascot: getMascotName(name),
+                                    image: `/assets/teams/${name}.jpg`
+                                }));
+                                return (
+                                    <div
+                                        key={team.name}
+                                        className="team-card split-team-card"
+                                        onClick={() => selectWinner(team)}
+                                    >
+                                        <div className="sub-team top">
+                                            <div className="sub-team-info">
+                                                <p className="team-name">{subTeams[0].displayName}</p>
+                                                <p className="mascot-name">{subTeams[0].mascot}</p>
+                                            </div>
+                                            <img src={subTeams[0].image} alt={subTeams[0].name} />
+                                        </div>
+                                        <div className="split-divider"></div>
+                                        <div className="sub-team bottom">
+                                            <div className="sub-team-info">
+                                                <p className="team-name">{subTeams[1].displayName}</p>
+                                                <p className="mascot-name">{subTeams[1].mascot}</p>
+                                            </div>
+                                            <img src={subTeams[1].image} alt={subTeams[1].name} />
+                                        </div>
+                                    </div>
+                                );
+                            })()
+                        ) : (
+                            <div
+                                key={team.name}
+                                className="team-card"
+                                onClick={() => selectWinner(team)}
+                            >
+                                {team.image && (
+                                    <img src={team.image} alt={team.name} />
+                                )}
+                                <p className="mascot-name">{formatMascotName(team.name)}</p>
+                                <p className="team-name">{formatTeamName(team.name)}</p>
+                            </div>
+                        );
 
-                    <span className="vs">VS</span>
-
-                    <div
-                        className="team-card"
-                        onClick={() => selectWinner(currentMatchup[1])}
-                    >
-                        {currentMatchup[1].image && (
-                            <img src={currentMatchup[1].image} alt={currentMatchup[1].name} />
-                        )}
-                        <p className="mascot-name">{formatMascotName(currentMatchup[1].name)}</p>
-                        <p className="team-name">{formatTeamName(currentMatchup[1].name)}</p>
-                    </div>
+                        return (
+                            <>
+                                {cardContent}
+                                {index === 0 && <span className="vs">VS</span>}
+                            </>
+                        );
+                    })}
                 </div>
+            )}
+
+            {/* Play-In Game Info Box */}
+            {!regionChamp && currentMatchup.some(team => team.name.includes('_or_')) && (
+                (() => {
+                    const playInTeams = currentMatchup.filter(team => team.name.includes('_or_'));
+
+                    const cutoffMap = selectedGender === 'M' ? cutOffTimes : womensCutOffTimes;
+                    const cutoffDate = cutoffMap[selectedYear];
+
+                    const timeString = cutoffDate ? cutoffDate.toLocaleString('en-US', {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        timeZoneName: 'short'
+                    }) : 'the start of the Round of 64';
+
+                    return (
+                        <div className="play-in-info">
+                            {playInTeams.map(team => {
+                                const subTeams = team.name.split('_or_').map(name => formatTeamName(name));
+                                return (
+                                    <p key={team.name}>
+                                        <strong>{subTeams[0]}</strong> and <strong>{subTeams[1]}</strong> will compete for their spot in the tournament in a play-in game prior to the beginning of the Round of 64.
+                                    </p>
+                                );
+                            })}
+                            <p>
+                                When the winner of the play-in game is known, this website will be updated and you will only see one team here.
+                            </p>
+                            <p className="cutoff-note">
+                                Please fill out the bracket assuming one of the two teams wins the play-in game and feel free to come back later and edit your bracket if you are wrong.
+                                Note that editing is only allowed until <strong>{timeString}</strong>.
+                            </p>
+                        </div>
+                    );
+                })()
             )}
 
             {/* Progress for each region - clickable to switch */}

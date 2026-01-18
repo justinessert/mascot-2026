@@ -189,6 +189,20 @@ export function getMascotName(teamKey) {
 }
 
 /**
+ * Capitalize mascot name (title case)
+ * e.g., "crimson tide" -> "Crimson Tide"
+ * @param {string} teamKey - The team key
+ * @returns {string} The formatted mascot name
+ */
+export function formatMascotName(teamKey) {
+    const mascot = getMascotName(teamKey);
+    return mascot
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+}
+
+/**
  * Helper function to format team name from key
  * @param {string} teamKey - The team key (e.g., "north_carolina", "texas_a&m")
  * @returns {string} Formatted team name (e.g., "North Carolina", "Texas A&M")

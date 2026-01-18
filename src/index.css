@@ -41,7 +41,7 @@ button {
   padding: 10px 16px;
   font-size: 16px;
   font-weight: bold;
-  background: #ff5722;
+  background: var(--accent-color);
   color: white !important;
   border: none;
   border-radius: 5px;
@@ -51,7 +51,7 @@ button {
 }
 
 button:hover {
-  background: #e64a19;
+  background: #0056b3;
 }
 
 button:disabled {

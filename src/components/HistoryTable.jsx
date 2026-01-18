@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import './HistoryTable.css';
 
-function HistoryTable({ data, title, loading, emptyMessage }) {
+function HistoryTable({ data, title, loading, emptyMessage, onAction, actionLabel }) {
     const navigate = useNavigate();
 
     return (
@@ -10,7 +10,14 @@ function HistoryTable({ data, title, loading, emptyMessage }) {
             {loading && <div className="loading-text">Loading history...</div>}
 
             {!loading && data.length === 0 && (
-                <p className="no-history">{emptyMessage}</p>
+                <div className="empty-state">
+                    <p className="no-history">{emptyMessage}</p>
+                    {onAction && actionLabel && (
+                        <button onClick={onAction} className="create-bracket-btn">
+                            {actionLabel}
+                        </button>
+                    )}
+                </div>
             )}
 
             {!loading && data.length > 0 && (

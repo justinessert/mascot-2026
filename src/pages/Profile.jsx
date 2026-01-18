@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
+import { useTournament } from '../hooks/useTournament.jsx';
 import { useNavigate, Link } from 'react-router-dom';
 import { getUserBracketHistory } from '../services/bracketService';
 import HistoryTable from '../components/HistoryTable';
+import { bracketData, womensBracketData } from '../constants/bracketData';
 import './Profile.css';
 
 function Profile() {
     const { user, logout } = useAuth();
+    const { setSelectedYear, setSelectedGender } = useTournament();
     const navigate = useNavigate();
     const [menHistory, setMenHistory] = useState([]);
     const [womenHistory, setWomenHistory] = useState([]);
@@ -40,6 +43,21 @@ function Profile() {
         } catch (error) {
             console.error('Logout error:', error);
         }
+    };
+
+    const handleCreateBracket = (gender) => {
+        // 1. Set Gender Context
+        const genderCode = gender === 'men' ? 'M' : 'W';
+        setSelectedGender(genderCode);
+
+        // 2. Set Year Context (Latest available for that gender)
+        const data = gender === 'men' ? bracketData : womensBracketData;
+        const years = Object.keys(data).map(Number).sort((a, b) => b - a);
+        const latestYear = years[0] || 2025;
+        setSelectedYear(latestYear);
+
+        // 3. Navigate
+        navigate('/bracket/pick');
     };
 
     if (!user) {
@@ -81,6 +99,8 @@ function Profile() {
                         data={menHistory}
                         loading={loading}
                         emptyMessage="No men's brackets created yet."
+                        onAction={() => handleCreateBracket('men')}
+                        actionLabel="Create Men's Bracket"
                     />
 
                     <HistoryTable
@@ -88,6 +108,8 @@ function Profile() {
                         data={womenHistory}
                         loading={loading}
                         emptyMessage="No women's brackets created yet."
+                        onAction={() => handleCreateBracket('women')}
+                        actionLabel="Create Women's Bracket"
                     />
                 </div>
 

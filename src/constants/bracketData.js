@@ -236,6 +236,6 @@ export const womensFirstFourMapping = {
 
 // Women's tournament cutoff times
 export const womensCutOffTimes = {
-    2025: new Date(Date.UTC(2027, 2, 21, 18, 0)), // Women's First Four starts March 19
+    2025: new Date(Date.UTC(2025, 2, 21, 18, 0)), // Women's First Four starts March 19
     2026: new Date(Date.UTC(2026, 2, 20, 18, 0)), // To Do - Check game time when announced
 };

@@ -179,6 +179,36 @@
     object-fit: cover;
 }
 
+/* Hidden Champion Icon (before cutoff) */
+.hidden-champion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--secondary-text);
+}
+
+.hidden-champion svg {
+    opacity: 0.6;
+}
+
+/* Locked Rows (before cutoff, other users) */
+.leaderboard-table tbody tr.locked {
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+.leaderboard-table tbody tr.locked:hover {
+    background: inherit;
+}
+
+.leaderboard-table tbody tr.locked:nth-child(even):hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
 /* Info Note */
 .info-note {
     text-align: center;

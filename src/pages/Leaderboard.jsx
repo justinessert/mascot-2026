@@ -13,7 +13,7 @@ import { db } from '../services/firebase';
 import { useTournament } from '../hooks/useTournament.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { Team } from '../services/bracketService';
-import { cutOffTimes } from '../constants/bracketData';
+import { cutOffTimes, womensCutOffTimes } from '../constants/bracketData';
 import ComingSoon from '../components/ComingSoon';
 import './Leaderboard.css';
 
@@ -31,10 +31,16 @@ function Leaderboard() {
     const [showLoginBanner, setShowLoginBanner] = useState(true);
     const [showPublishBanner, setShowPublishBanner] = useState(true);
 
-    // Check if we're past the cutoff time (can view brackets)
+    // Check if we're past the cutoff time (can view all brackets)
     const isPastCutoff = () => {
-        const cutoff = cutOffTimes[selectedYear];
+        const cutoffMap = selectedGender === 'W' ? womensCutOffTimes : cutOffTimes;
+        const cutoff = cutoffMap[selectedYear];
         return cutoff && new Date() >= cutoff;
+    };
+
+    // Check if a bracket row is the current user's
+    const isOwnBracket = (bracketId) => {
+        return user && bracketId === user.uid;
     };
 
     // Load leaderboard data
@@ -96,7 +102,8 @@ function Leaderboard() {
 
     // Handle clicking on a bracket row
     const viewBracket = (bracketId) => {
-        if (isPastCutoff()) {
+        // Allow viewing if past cutoff OR if it's the user's own bracket
+        if (isPastCutoff() || isOwnBracket(bracketId)) {
             navigate(`/bracket/${selectedYear}/${bracketId}`);
         }
     };
@@ -160,7 +167,7 @@ function Leaderboard() {
                         <thead>
                             <tr>
                                 <th>Rank</th>
-                                {isPastCutoff() && <th>Champion</th>}
+                                <th>Champion</th>
                                 <th>Bracket Name</th>
                                 <th>User</th>
                                 <th>Score</th>
@@ -168,29 +175,42 @@ function Leaderboard() {
                             </tr>
                         </thead>
                         <tbody>
-                            {brackets.map((bracket) => (
-                                <tr
-                                    key={bracket.id}
-                                    onClick={() => viewBracket(bracket.bracketId)}
-                                    className={`
-                                        ${isPastCutoff() ? 'clickable' : ''}
-                                        ${user && bracket.bracketId === user.uid ? 'user-row' : ''}
-                                    `}
-                                >
-                                    <td className="rank-cell">{bracket.rank}</td>
-                                    {isPastCutoff() && (
+                            {brackets.map((bracket) => {
+                                const canView = isPastCutoff() || isOwnBracket(bracket.bracketId);
+                                const showChampion = isPastCutoff() || isOwnBracket(bracket.bracketId);
+
+                                return (
+                                    <tr
+                                        key={bracket.id}
+                                        onClick={() => viewBracket(bracket.bracketId)}
+                                        className={`
+                                            ${canView ? 'clickable' : 'locked'}
+                                            ${isOwnBracket(bracket.bracketId) ? 'user-row' : ''}
+                                        `}
+                                    >
+                                        <td className="rank-cell">{bracket.rank}</td>
                                         <td className="champion-cell">
-                                            {bracket.champion?.image && (
-                                                <img src={bracket.champion.image} alt={bracket.champion.name} />
+                                            {showChampion ? (
+                                                bracket.champion?.image && (
+                                                    <img src={bracket.champion.image} alt={bracket.champion.name} />
+                                                )
+                                            ) : (
+                                                <div className="hidden-champion" title="Revealed after tournament starts">
+                                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                                        <circle cx="12" cy="12" r="10"></circle>
+                                                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                                                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                                    </svg>
+                                                </div>
                                             )}
                                         </td>
-                                    )}
-                                    <td>{bracket.bracketName}</td>
-                                    <td>{bracket.userName}</td>
-                                    <td className="score-cell">{bracket.score}</td>
-                                    {isPastCutoff() && <td>{bracket.maxScore ?? '-'}</td>}
-                                </tr>
-                            ))}
+                                        <td>{bracket.bracketName}</td>
+                                        <td>{bracket.userName}</td>
+                                        <td className="score-cell">{bracket.score}</td>
+                                        {isPastCutoff() && <td>{bracket.maxScore ?? '-'}</td>}
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

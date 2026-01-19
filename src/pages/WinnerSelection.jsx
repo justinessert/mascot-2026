@@ -43,6 +43,13 @@ function WinnerSelection() {
     const [isModified, setIsModified] = useState(false); // Track if bracket changed since last save
     const [previousPicks, setPreviousPicks] = useState({}); // To track picks before reset
 
+    // Check if we're past the cutoff time (no more saves/publishes allowed)
+    const isPastCutoff = () => {
+        const cutoffMap = selectedGender === 'W' ? womensCutOffTimes : cutOffTimes;
+        const cutoff = cutoffMap[selectedYear];
+        return cutoff && new Date() >= cutoff;
+    };
+
     // Check if user has unsaved completed bracket
     const hasUnsavedBracket = champion && !saved;
 
@@ -529,6 +536,14 @@ function WinnerSelection() {
             <div className="winner-selection-container">
                 <div className="champion-display">
                     <h2>🏆 Your Champion</h2>
+
+                    {/* Cutoff warning banner */}
+                    {isPastCutoff() && (
+                        <div className="cutoff-warning-banner">
+                            ⚠️ The tournament has started. Brackets are now locked and cannot be saved or published.
+                        </div>
+                    )}
+
                     <p>You have picked <strong>{formatTeamName(champion.name)}</strong> to win the tournament!</p>
                     <p className="mascot-name">{getMascotName(champion.name)}</p>
 
@@ -556,8 +571,10 @@ function WinnerSelection() {
                             <button
                                 onClick={handleEditPicks}
                                 className="secondary-btn"
+                                disabled={isPastCutoff()}
+                                title={isPastCutoff() ? 'Bracket locked - tournament has started' : ''}
                             >
-                                Edit Picks
+                                {isPastCutoff() ? 'Editing Locked 🔒' : 'Edit Picks'}
                             </button>
                             <button
                                 onClick={() => safeNavigate('/bracket/view/full')}
@@ -581,17 +598,19 @@ function WinnerSelection() {
                                 <>
                                     <button
                                         onClick={handleSaveBracket}
-                                        disabled={saved && !isModified}
+                                        disabled={(saved && !isModified) || isPastCutoff()}
                                         className="primary-btn"
+                                        title={isPastCutoff() ? 'Bracket lock - tournament has started' : ''}
                                     >
-                                        {saved ? (isModified ? 'Update Changes' : 'Saved ✓') : 'Save Bracket'}
+                                        {isPastCutoff() ? 'Locked 🔒' : (saved ? (isModified ? 'Update Changes' : 'Saved ✓') : 'Save Bracket')}
                                     </button>
                                     <button
                                         onClick={handlePublishBracket}
-                                        disabled={published}
+                                        disabled={published || isPastCutoff()}
                                         className="primary-btn"
+                                        title={isPastCutoff() ? 'Bracket locked - tournament has started' : ''}
                                     >
-                                        {published ? 'Published ✓' : 'Publish to Leaderboard'}
+                                        {isPastCutoff() ? 'Locked 🔒' : (published ? 'Published ✓' : 'Publish to Leaderboard')}
                                     </button>
                                 </>
                             )}
@@ -650,6 +669,14 @@ function WinnerSelection() {
     return (
         <div className="winner-selection-container">
             <h2>Select Which Mascot You Like Best</h2>
+
+            {/* Cutoff warning banner */}
+            {isPastCutoff() && (
+                <div className="cutoff-warning-banner">
+                    ⚠️ The tournament has started. Any changes you make cannot be saved or published.
+                </div>
+            )}
+
             <p className="current-region">
                 Region: <strong>{formatTeamName(currentRegionName)}</strong>
             </p>

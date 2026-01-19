@@ -220,7 +220,7 @@ export const cutOffTimes = {
     2023: new Date(Date.UTC(2023, 2, 16, 16, 15)),
     2024: new Date(Date.UTC(2024, 2, 21, 16, 15)),
     2025: new Date(Date.UTC(2025, 2, 20, 16, 15)),
-    2026: new Date(Date.UTC(2026, 2, 19, 16, 15)), // Placeholder - update when schedule announced
+    2026: new Date(Date.UTC(2026, 2, 20, 16, 15)), // To Do - Check game time when announced
 };
 
 // Women's First Four Mapping (play-in game winners)
@@ -237,5 +237,5 @@ export const womensFirstFourMapping = {
 // Women's tournament cutoff times
 export const womensCutOffTimes = {
     2025: new Date(Date.UTC(2025, 2, 21, 18, 0)), // Women's First Four starts March 19
-    2026: new Date(Date.UTC(2026, 2, 20, 18, 0)), // Placeholder
+    2026: new Date(Date.UTC(2026, 2, 20, 18, 0)), // To Do - Check game time when announced
 };

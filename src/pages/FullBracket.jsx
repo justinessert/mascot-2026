@@ -15,7 +15,7 @@ import FullBracketDisplay from '../components/FullBracketDisplay';
 import './FullBracket.css';
 
 function FullBracket() {
-    const { selectedYear, selectedGender, getBracketData, getRegionOrder, getFirstFourMapping } = useTournament();
+    const { selectedYear, selectedGender, getBracketData, getRegionOrder, getFirstFourMapping, hasBracketData, getSelectionSundayTime } = useTournament();
     const { user } = useAuth();
 
     // Convert UI gender ('M'/'W') to service gender ('men'/'women')
@@ -109,10 +109,8 @@ function FullBracket() {
         );
     }
 
-    const bracketData = getBracketData();
-    const firstRegionKey = Object.keys(bracketData)[0];
-    if (!firstRegionKey || !bracketData[firstRegionKey]?.length) {
-        return <ComingSoon year={selectedYear} />;
+    if (!hasBracketData()) {
+        return <ComingSoon year={selectedYear} selectionSundayTime={getSelectionSundayTime()} />;
     }
 
     return (

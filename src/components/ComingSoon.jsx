@@ -6,7 +6,30 @@
 
 import './ComingSoon.css';
 
-function ComingSoon({ year }) {
+/**
+ * Format a date for display in the Coming Soon message
+ * e.g., "6:00 PM ET on Sunday, March 15th, 2026"
+ */
+function formatSelectionSundayDate(date) {
+    if (!date) return null;
+
+    const options = {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone: 'America/New_York',
+        timeZoneName: 'short'
+    };
+
+    return date.toLocaleString('en-US', options);
+}
+
+function ComingSoon({ year, selectionSundayTime }) {
+    const formattedDate = formatSelectionSundayDate(selectionSundayTime);
+
     return (
         <div className="coming-soon-container">
             <div className="coming-soon-box">
@@ -15,8 +38,12 @@ function ComingSoon({ year }) {
                     The teams for the {year} March Madness tournament have not yet been selected.
                 </p>
                 <p>
-                    The teams participating in the tournament will be announced at
-                    <strong> 6:00 PM ET on March 16th, {year}</strong>.
+                    The teams participating in the tournament will be announced
+                    {formattedDate ? (
+                        <strong> on {formattedDate}</strong>
+                    ) : (
+                        <strong> on Selection Sunday</strong>
+                    )}.
                 </p>
                 <p className="update-note">
                     This website will be updated within 24 hours of that announcement.
@@ -27,3 +54,4 @@ function ComingSoon({ year }) {
 }
 
 export default ComingSoon;
+

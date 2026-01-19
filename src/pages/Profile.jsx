@@ -50,11 +50,19 @@ function Profile() {
         const genderCode = gender === 'men' ? 'M' : 'W';
         setSelectedGender(genderCode);
 
-        // 2. Set Year Context (Latest available for that gender)
+        // 2. Set Year Context (Latest available year that has actual data)
         const data = gender === 'men' ? bracketData : womensBracketData;
         const years = Object.keys(data).map(Number).sort((a, b) => b - a);
-        const latestYear = years[0] || 2025;
-        setSelectedYear(latestYear);
+
+        // Find the first year that has actual bracket data (not null)
+        const latestYearWithData = years.find(year => {
+            const yearData = data[year];
+            if (!yearData) return false;
+            const firstRegionKey = Object.keys(yearData)[0];
+            return firstRegionKey && yearData[firstRegionKey]?.length > 0;
+        }) || 2025;
+
+        setSelectedYear(latestYearWithData);
 
         // 3. Navigate
         navigate('/bracket/pick');

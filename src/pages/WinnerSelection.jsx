@@ -27,7 +27,7 @@ import './WinnerSelection.css';
 
 function WinnerSelection() {
     const { safeNavigate, setBlocker, clearBlocker } = useNavigationBlocker();
-    const { selectedYear, selectedGender, setSelectedGender, getBracketData, getRegionOrder, getFirstFourMapping } = useTournament();
+    const { selectedYear, selectedGender, setSelectedGender, getBracketData, getRegionOrder, getFirstFourMapping, hasBracketData, getSelectionSundayTime } = useTournament();
     const { user } = useAuth();
 
     // Convert UI gender ('M'/'W') to service gender ('men'/'women')
@@ -529,10 +529,8 @@ function WinnerSelection() {
     }
 
     // No data for selected year
-    const bracketData = getBracketData();
-    const firstRegionKey = Object.keys(bracketData)[0];
-    if (!firstRegionKey || !bracketData[firstRegionKey]?.length) {
-        return <ComingSoon year={selectedYear} />;
+    if (!hasBracketData()) {
+        return <ComingSoon year={selectedYear} selectionSundayTime={getSelectionSundayTime()} />;
     }
 
     // Champion view - show when all picks are complete

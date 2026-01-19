@@ -19,7 +19,7 @@ import './Leaderboard.css';
 
 function Leaderboard() {
     const navigate = useNavigate();
-    const { selectedYear, selectedGender, hasBracketData } = useTournament();
+    const { selectedYear, selectedGender, hasBracketData, getSelectionSundayTime } = useTournament();
     const { user } = useAuth();
 
     // Convert UI gender ('M'/'W') to service gender ('men'/'women')
@@ -111,7 +111,7 @@ function Leaderboard() {
 
     // Show coming soon if no bracket data for this year
     if (!hasBracketData()) {
-        return <ComingSoon year={selectedYear} />;
+        return <ComingSoon year={selectedYear} selectionSundayTime={getSelectionSundayTime()} />;
     }
 
     return (

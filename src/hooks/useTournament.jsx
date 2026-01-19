@@ -12,7 +12,9 @@ import {
     regionOrder,
     womensRegionOrder,
     firstFourMapping,
-    womensFirstFourMapping
+    womensFirstFourMapping,
+    selectionSundayTimes,
+    womensSelectionSundayTimes
 } from '../constants/bracketData';
 
 const TournamentContext = createContext(null);
@@ -98,6 +100,14 @@ export function TournamentProvider({ children }) {
         return yearHasData(selectedYear, selectedGender);
     };
 
+    // Get Selection Sunday announcement time for current year/gender
+    const getSelectionSundayTime = () => {
+        if (selectedGender === 'W') {
+            return womensSelectionSundayTimes[selectedYear] || selectionSundayTimes[selectedYear];
+        }
+        return selectionSundayTimes[selectedYear];
+    };
+
     const value = {
         selectedYear,
         setSelectedYear,
@@ -109,6 +119,7 @@ export function TournamentProvider({ children }) {
         getRegionOrder,
         getFirstFourMapping,
         hasBracketData,
+        getSelectionSundayTime,
     };
 
     return (

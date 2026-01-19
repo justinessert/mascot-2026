@@ -124,7 +124,6 @@ export const bracketData25 = {
     ],
 };
 
-// Women's Tournament Bracket Data (2025+)
 export const womensBracketData25 = {
     // Regional 1 (#1 UCLA)
     regional_1: [
@@ -148,21 +147,11 @@ export const womensBracketData25 = {
     ],
 };
 
-// Placeholder for 2026 Women's bracket data
-export const womensBracketData26 = {
-    regional_1: [],
-    regional_2: [],
-    regional_3: [],
-    regional_4: [],
-};
-
 // Placeholder for 2026 bracket data - to be filled when tournament is announced
-export const bracketData26 = {
-    south: [],
-    east: [],
-    midwest: [],
-    west: [],
-};
+export const bracketData26 = null;
+
+// Placeholder for 2026 Women's bracket data
+export const womensBracketData26 = null;
 
 export const bracketData = {
     2022: bracketData22,
@@ -183,13 +172,13 @@ export const regionOrder = {
     2023: ["south", "midwest", "west", "east"],
     2024: ["east", "south", "midwest", "west"],
     2025: ["south", "east", "midwest", "west"],
-    2026: ["south", "east", "midwest", "west"], // Update when bracket is announced
+    2026: null, // Update when bracket is announced
 };
 
 // Women's region order (uses numbered regions)
 export const womensRegionOrder = {
     2025: ["regional_1", "regional_2", "regional_3", "regional_4"],
-    2026: ["regional_1", "regional_2", "regional_3", "regional_4"], // Update when bracket is announced
+    2026: null, // Update when bracket is announced
 };
 
 export const firstFourMapping = {
@@ -212,15 +201,7 @@ export const firstFourMapping = {
         "american_or_mount_saint_marys": "mount_saint_marys",
         "texas_or_xavier": "xavier",
     },
-    2026: {},
-};
-
-export const cutOffTimes = {
-    2022: new Date(Date.UTC(2022, 2, 17, 16, 15)),
-    2023: new Date(Date.UTC(2023, 2, 16, 16, 15)),
-    2024: new Date(Date.UTC(2024, 2, 21, 16, 15)),
-    2025: new Date(Date.UTC(2025, 2, 20, 16, 15)),
-    2026: new Date(Date.UTC(2026, 2, 20, 16, 15)), // To Do - Check game time when announced
+    2026: null,
 };
 
 // Women's First Four Mapping (play-in game winners)
@@ -231,11 +212,35 @@ export const womensFirstFourMapping = {
         "iowa_state_or_princeton": "iowa_state",
         "william_mary_or_high_point": "william_mary",
     },
-    2026: {},
+    2026: null,
+};
+
+export const cutOffTimes = {
+    2022: new Date(Date.UTC(2022, 2, 17, 16, 15)),
+    2023: new Date(Date.UTC(2023, 2, 16, 16, 15)),
+    2024: new Date(Date.UTC(2024, 2, 21, 16, 15)),
+    2025: new Date(Date.UTC(2025, 2, 20, 16, 15)),
+    2026: new Date(Date.UTC(2026, 2, 20, 16, 15)), // To Do - Check game time when announced
 };
 
 // Women's tournament cutoff times
 export const womensCutOffTimes = {
     2025: new Date(Date.UTC(2025, 2, 21, 18, 0)), // Women's First Four starts March 19
     2026: new Date(Date.UTC(2026, 2, 20, 18, 0)), // To Do - Check game time when announced
+};
+
+// Selection Sunday announcement times (when teams are revealed)
+// Times are in UTC - typically 6:00 PM ET for men's bracket reveal
+export const selectionSundayTimes = {
+    2022: new Date(Date.UTC(2022, 2, 13, 22, 0)), // March 13, 2022, 6:00 PM ET
+    2023: new Date(Date.UTC(2023, 2, 12, 22, 0)), // March 12, 2023, 6:00 PM ET
+    2024: new Date(Date.UTC(2024, 2, 17, 22, 0)), // March 17, 2024, 6:00 PM ET
+    2025: new Date(Date.UTC(2025, 2, 16, 22, 0)), // March 16, 2025, 6:00 PM ET
+    2026: new Date(Date.UTC(2026, 2, 15, 22, 0)), // March 15, 2026, 6:00 PM ET (estimated)
+};
+
+// Women's Selection Sunday times (often revealed same day, slightly later)
+export const womensSelectionSundayTimes = {
+    2025: new Date(Date.UTC(2025, 2, 17, 0, 0)), // March 16, 2025, 8:00 PM ET
+    2026: new Date(Date.UTC(2026, 2, 16, 0, 0)), // March 15, 2026, 8:00 PM ET (estimated)
 };

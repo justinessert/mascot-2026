@@ -40,6 +40,7 @@ function App() {
             <Route path="bracket/view/full" element={<FullBracket />} />
             <Route path="bracket/view/:region" element={<BracketDisplay />} />
             <Route path="bracket/:year/:uuid" element={<BracketView />} />
+            <Route path="bracket/:year/:uuid/:gender" element={<BracketView />} />
 
             {/* Catch-all redirect */}
             <Route path="*" element={<Navigate to="/login" replace />} />

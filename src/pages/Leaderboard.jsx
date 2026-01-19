@@ -104,7 +104,8 @@ function Leaderboard() {
     const viewBracket = (bracketId) => {
         // Allow viewing if past cutoff OR if it's the user's own bracket
         if (isPastCutoff() || isOwnBracket(bracketId)) {
-            navigate(`/bracket/${selectedYear}/${bracketId}`);
+            const genderParam = selectedGender === 'W' ? 'women' : 'men';
+            navigate(`/bracket/${selectedYear}/${bracketId}/${genderParam}`);
         }
     };
 

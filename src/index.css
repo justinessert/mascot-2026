@@ -107,3 +107,31 @@ img {
   height: auto;
   border-radius: 10px;
 }
+
+/* Info Banner - Global utility */
+.info-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.info-banner .close-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent-color);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 8px;
+  margin: 0;
+}
+
+.info-banner .close-btn:hover {
+  opacity: 0.7;
+}

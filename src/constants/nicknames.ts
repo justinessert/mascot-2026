@@ -6,6 +6,7 @@
 
 import type { NicknamesDictionary } from '../types/bracket';
 import nicknamesData from '../../shared-data/nicknames.json';
+import abbreviationsData from '../../shared-data/abbreviations.json';
 
 export const nicknames: NicknamesDictionary = nicknamesData;
 
@@ -45,24 +46,7 @@ export function formatTeamName(teamKey: string): string {
     if (!teamKey) return '';
 
     // Special cases for abbreviations that should be all caps
-    const abbreviations: Record<string, string> = {
-        'a&m': 'A&M',
-        'cc': 'CC',      // Corpus Christi
-        'uc': 'UC',      // UC Irvine, UC San Diego
-        'nc': 'NC',      // NC State, NC Central
-        'unc': 'UNC',    // UNC Wilmington, UNC Asheville
-        'tcu': 'TCU',
-        'byu': 'BYU',
-        'lsu': 'LSU',
-        'usc': 'USC',
-        'uab': 'UAB',
-        'ucla': 'UCLA',
-        'uconn': 'UConn',
-        'ucsb': 'UCSB',
-        'vcu': 'VCU',
-        'fdu': 'FDU',
-        'siu': 'SIU',
-    };
+    const abbreviations: Record<string, string> = abbreviationsData;
 
     return teamKey
         .split('_')

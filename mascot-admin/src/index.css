@@ -1,0 +1,413 @@
+/* Global Dark Theme - matching Angular mascot-2025 */
+:root {
+  --primary-bg: #121212;
+  --secondary-bg: #1e1e1e;
+  --primary-text: #ffffff;
+  --secondary-text: #b3b3b3;
+  --accent-color: #007bff;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
+  font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+  line-height: 1.6;
+}
+
+/* Links */
+a {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Default Button Styling */
+button {
+  padding: 10px 16px;
+  font-size: 16px;
+  font-weight: bold;
+  background: var(--accent-color);
+  color: white !important;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  margin: 5px;
+}
+
+button:hover {
+  background: #0056b3;
+}
+
+button:disabled {
+  background: #4a4a4a !important;
+  color: #888888 !important;
+  cursor: not-allowed;
+}
+
+/* Common Page Container */
+.page-container {
+  padding: 20px;
+  text-align: center;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Firefox Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Layout Utils */
+.flex-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: nowrap;
+  /* Prevent wrapping unless necessary on very small screens */
+  margin-bottom: 2rem;
+  width: 100%;
+}
+
+.stat-card {
+  background-color: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  border-radius: 12px;
+  flex: 1;
+  text-align: center;
+  box-shadow: var(--card-shadow);
+  min-width: 200px;
+  /* Ensure cards don't get too squished */
+}
+
+/* Image defaults */
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+
+/* Info Banner - Global utility */
+.info-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.info-banner .close-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent-color);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 8px;
+  margin: 0;
+}
+
+.info-banner .close-btn:hover {
+  opacity: 0.7;
+}
+
+/* --- Admin Specific Overrides/Additions --- */
+
+/* Leaderboard-style Table for Admin */
+.audit-table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  background: var(--secondary-bg);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  margin-top: 2rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.95rem;
+}
+
+table thead {
+  background: #3a3a3a;
+}
+
+th {
+  padding: 14px 12px;
+  text-align: left;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--secondary-text);
+}
+
+th:first-child {
+  border-top-left-radius: 12px;
+}
+
+th:last-child {
+  border-top-right-radius: 12px;
+}
+
+td {
+  padding: 14px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--primary-text);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 12px;
+}
+
+tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 12px;
+}
+
+/* Alternate Row Background */
+tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Hover Effect */
+tbody tr:hover td {
+  background-color: rgba(59, 130, 246, 0.1);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.status-badge.success {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--accent-success);
+  /* Use admin specific colors if not defined globally, but here we can rely on defaults or define them */
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-badge.error {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--accent-danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-badge.warning {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: var(--accent-warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Additional Variables for Badge Colors if needed */
+:root {
+  --accent-danger: #ef4444;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--primary-text);
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: var(--secondary-text);
+  text-transform: uppercase;
+}
+
+/* --- Champion / Team Detail Card Styles --- */
+.champion-display {
+  background: var(--secondary-bg);
+  padding: 40px;
+  border-radius: 16px;
+  max-width: 800px;
+  width: 100%;
+  margin: 40px auto;
+  text-align: center;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.champion-display h2 {
+  margin-bottom: 16px;
+  font-size: 1.8rem;
+  color: var(--primary-text);
+}
+
+.champion-display .mascot-name {
+  color: var(--accent-color);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.champion-image {
+  width: 200px;
+  height: 200px;
+  object-fit: contain;
+  margin: 20px auto;
+  /* Centering fix */
+  display: block;
+  /* Ensure it behaves as a block for margin auto to work reliably */
+}
+
+.bracket-form {
+  margin-top: 30px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.bracket-form .form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.bracket-form label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--secondary-text);
+  font-size: 0.9rem;
+}
+
+.bracket-form input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.bracket-form input:focus {
+  border-color: var(--accent-color);
+  outline: none;
+}
+
+.bracket-form input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* Info Page / How It Works Styles */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 2rem;
+}
+
+.info-card {
+  background: var(--secondary-bg);
+  padding: 24px;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.step-number {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  background: var(--accent-color);
+  color: white;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.info-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+  color: var(--primary-text);
+}
+
+.info-card p {
+  font-size: 0.95rem;
+  color: var(--secondary-text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,194 @@
+/**
+ * Layout Component
+ * 
+ * This component wraps all pages and provides:
+ * - Navigation header
+ * - Year selector dropdown
+ * - User authentication status display
+ * - Consistent page structure
+ */
+
+import { Outlet, Link } from 'react-router-dom';
+import { useState, FocusEvent, ChangeEvent } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import { useTournament } from '../hooks/useTournament';
+import { useNavigationBlocker } from '../hooks/useNavigationBlocker';
+import type { GenderCode } from '../types/bracket';
+import './Layout.css';
+
+function Layout(): React.ReactElement {
+    const [menuOpen, setMenuOpen] = useState<boolean>(false);
+    const [selectorOpen, setSelectorOpen] = useState<boolean>(false);
+
+    // Get safe navigation from blocker hook
+    const { safeNavigate, showWarning, confirmLeave, cancelLeave } = useNavigationBlocker();
+
+    // Get user and logout function from our auth hook
+    const { user, logout } = useAuth();
+
+    // Get year/gender selection from our year hook
+    const {
+        selectedYear,
+        setSelectedYear,
+        selectedGender,
+        setSelectedGender,
+        availableYears,
+        getDisplayLabel
+    } = useTournament();
+
+    const toggleMenu = (): void => setMenuOpen(!menuOpen);
+    const closeMenu = (): void => setMenuOpen(false);
+
+    const toggleSelector = (): void => setSelectorOpen(!selectorOpen);
+    const closeSelector = (): void => setSelectorOpen(false);
+
+    const handleNavigation = (path: string): void => {
+        safeNavigate(path);
+        closeMenu();
+    };
+
+    const handleLogout = async (): Promise<void> => {
+        try {
+            await logout();
+            safeNavigate('/');
+            closeMenu();
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
+
+    const handleYearChange = (e: ChangeEvent<HTMLSelectElement>): void => {
+        setSelectedYear(Number(e.target.value));
+    };
+
+    const handleGenderChange = (gender: GenderCode): void => {
+        setSelectedGender(gender);
+    };
+
+    // Close selector when clicking outside
+    const handleSelectorBlur = (e: FocusEvent<HTMLDivElement>): void => {
+        // Only close if the click is outside the selector
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            closeSelector();
+        }
+    };
+
+    return (
+        <div className="app-container">
+            {/* Navigation Header */}
+            <header className="app-header">
+                <div className="header-content">
+                    <Link to="/" className="logo" onClick={closeMenu}>
+                        🏀 Mascot Madness
+                    </Link>
+
+                    {/* Year/Gender Selector */}
+                    <div
+                        className="year-gender-selector"
+                        onBlur={handleSelectorBlur}
+                        tabIndex={-1}
+                    >
+                        <button
+                            className="selector-toggle"
+                            onClick={toggleSelector}
+                            aria-label="Select tournament year and gender"
+                        >
+                            {getDisplayLabel()} ▾
+                        </button>
+
+                        {selectorOpen && (
+                            <div className="selector-panel">
+                                <div className="gender-toggle">
+                                    <button
+                                        className={`gender-btn ${selectedGender === 'M' ? 'active' : ''}`}
+                                        onClick={() => handleGenderChange('M')}
+                                    >
+                                        Men
+                                    </button>
+                                    <button
+                                        className={`gender-btn ${selectedGender === 'W' ? 'active' : ''}`}
+                                        onClick={() => handleGenderChange('W')}
+                                    >
+                                        Women
+                                    </button>
+                                </div>
+                                <select
+                                    value={selectedYear}
+                                    onChange={handleYearChange}
+                                    aria-label="Select tournament year"
+                                    className="year-dropdown"
+                                >
+                                    {availableYears.map(year => (
+                                        <option key={year} value={year}>
+                                            {year}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mobile menu button */}
+                    <button
+                        className="menu-toggle"
+                        onClick={toggleMenu}
+                        aria-label="Toggle menu"
+                    >
+                        ☰
+                    </button>
+
+                    {/* Desktop & Mobile Navigation */}
+                    <nav className={`nav-menu ${menuOpen ? 'open' : ''}`}>
+                        <button onClick={() => handleNavigation('/')}>Home</button>
+                        <button onClick={() => handleNavigation('/bracket/pick')}>Pick Winners</button>
+                        <button onClick={() => handleNavigation('/bracket/view/full')}>View Bracket</button>
+                        <button onClick={() => handleNavigation('/leaderboard')}>Leaderboard</button>
+                        <button onClick={() => handleNavigation('/info')}>Info</button>
+
+                        {/* Conditional rendering based on auth state */}
+                        {user ? (
+                            // User is logged in - show their name and logout
+                            <>
+                                <Link to="/profile" className="user-display" onClick={closeMenu}>
+                                    👤 {user.displayName || user.email}
+                                </Link>
+                                <button onClick={handleLogout} className="logout-btn">
+                                    Logout
+                                </button>
+                            </>
+                        ) : (
+                            // User is not logged in - show login button
+                            <button onClick={() => handleNavigation('/login')}>Login</button>
+                        )}
+                    </nav>
+                </div>
+            </header>
+
+            {/* Main Content Area - child routes render here */}
+            <main className="main-content">
+                <Outlet />
+            </main>
+
+            {/* Navigation Warning Modal */}
+            {showWarning && (
+                <div className="leave-warning-overlay" onClick={cancelLeave}>
+                    <div className="leave-warning-modal" onClick={e => e.stopPropagation()}>
+                        <div className="leave-warning-icon">⚠️</div>
+                        <h3>Unsaved Bracket</h3>
+                        <p>You haven't saved your bracket yet! If you leave now, your selections won't be saved.</p>
+                        <div className="leave-warning-buttons">
+                            <button className="stay-btn" onClick={cancelLeave}>
+                                Stay & Save
+                            </button>
+                            <button className="leave-btn" onClick={confirmLeave}>
+                                Leave Anyway
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default Layout;

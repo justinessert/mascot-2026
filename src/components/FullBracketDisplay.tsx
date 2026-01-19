@@ -7,7 +7,7 @@
 
 import { Link } from 'react-router-dom';
 import { formatTeamName, getMascotName } from '../constants/nicknames';
-import { regionOrder } from '../constants/bracketData';
+import { mensTournaments } from '../constants/bracketData';
 import BracketSegment from './BracketSegment';
 import Matchup from './Matchup';
 import { Region, Team } from '../services/bracketService';
@@ -70,7 +70,8 @@ function FullBracketDisplay({
 
     // Get left and right regions based on year's order
     // Use provided order if available, otherwise fallback to men's default
-    const order = providedRegionOrder || regionOrder[numericYear] || regionOrder[2025] || [];
+    const fallbackConfig = mensTournaments[numericYear] || mensTournaments[2025];
+    const order = providedRegionOrder || fallbackConfig?.regionOrder || [];
     const leftRegions = [order[0], order[3]];
     const rightRegions = [order[1], order[2]];
 

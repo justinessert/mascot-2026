@@ -4,8 +4,8 @@ import { useTournament } from '../hooks/useTournament';
 import { useNavigate, Link } from 'react-router-dom';
 import { getUserBracketHistory, BracketHistoryEntry } from '../services/bracketService';
 import HistoryTable from '../components/HistoryTable';
-import { bracketData, womensBracketData } from '../constants/bracketData';
-import type { Gender, GenderCode } from '../types/bracket';
+import { mensTournaments, womensTournaments } from '../constants/bracketData';
+import type { Gender, GenderCode, TournamentConfig } from '../types/bracket';
 import './Profile.css';
 
 function Profile(): React.ReactElement {
@@ -52,15 +52,15 @@ function Profile(): React.ReactElement {
         setSelectedGender(genderCode);
 
         // 2. Set Year Context (Latest available year that has actual data)
-        const data = gender === 'men' ? bracketData : womensBracketData;
-        const years = Object.keys(data).map(Number).sort((a, b) => b - a);
+        const tournaments = gender === 'men' ? mensTournaments : womensTournaments;
+        const years = Object.keys(tournaments).map(Number).sort((a, b) => b - a);
 
         // Find the first year that has actual bracket data (not null)
         const latestYearWithData = years.find(year => {
-            const yearData = data[year];
-            if (!yearData) return false;
-            const firstRegionKey = Object.keys(yearData)[0];
-            return firstRegionKey && yearData[firstRegionKey]?.length > 0;
+            const config: TournamentConfig | undefined = tournaments[year];
+            if (!config || !config.regions) return false;
+            const firstRegionKey = Object.keys(config.regions)[0];
+            return firstRegionKey && config.regions[firstRegionKey]?.length > 0;
         }) || 2025;
 
         setSelectedYear(latestYearWithData);

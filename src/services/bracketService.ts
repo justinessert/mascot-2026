@@ -14,14 +14,15 @@ import {
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { db } from './firebase';
-import {
-    bracketData,
-    currentYear,
-    firstFourMapping,
-    regionOrder
-} from '../constants';
+import { mensTournaments, womensTournaments } from '../constants/bracketData';
 import { nicknames } from '../constants/nicknames';
-import type { TeamData, RegionData, Gender } from '../types/bracket';
+import type { TeamData, RegionData, Gender, TournamentConfig } from '../types/bracket';
+
+// Helper to get tournament config
+function getTournamentConfig(year: number, gender: Gender): TournamentConfig | undefined {
+    const tournaments = gender === 'men' ? mensTournaments : womensTournaments;
+    return tournaments[year];
+}
 
 // In-memory storage for bracket state (cleared on refresh, persisted on navigation)
 // Key format: `${gender}_${year}`
@@ -47,11 +48,13 @@ export function loadTemporaryBracket(year: number, gender: Gender = 'men'): Temp
 /**
  * Map team name through First Four if applicable
  */
-function mapName(teamName: string, year: number, mapping?: Record<string, string> | null): string {
+function mapName(teamName: string, year: number, mapping?: Record<string, string> | null, gender: Gender = 'men'): string {
     if (mapping) {
         return mapping[teamName] || teamName;
     }
-    return firstFourMapping[year]?.[teamName] || teamName;
+    // Fallback to tournament config if no mapping provided
+    const config = getTournamentConfig(year, gender);
+    return config?.firstFourMapping?.[teamName] || teamName;
 }
 
 /**
@@ -286,13 +289,15 @@ export function initializeBracket(
     year: number,
     bracketDataForYear: Record<string, string[]> | null,
     regionOrderForYear: string[] | null,
-    firstFourMappingForYear: Record<string, string> | null
+    firstFourMappingForYear: Record<string, string> | null,
+    gender: Gender = 'men'
 ): Record<string, Region> {
     const regions: Record<string, Region> = {};
 
-    // Use provided data or fallback to men's default
-    const dataToUse = bracketDataForYear || bracketData[year];
-    const orderToUse = regionOrderForYear || regionOrder[year];
+    // Use provided data or fallback from tournament config
+    const fallbackConfig = getTournamentConfig(year, gender);
+    const dataToUse = bracketDataForYear || fallbackConfig?.regions;
+    const orderToUse = regionOrderForYear || fallbackConfig?.regionOrder;
 
     if (!dataToUse || !orderToUse) {
         // Return empty if no data available
@@ -303,7 +308,7 @@ export function initializeBracket(
         regions[regionName] = new Region(regionName);
         regions[regionName].initializeBracket(
             dataToUse[regionName].map(
-                (name, index) => new Team(mapName(name, year, firstFourMappingForYear), index + 1)
+                (name: string, index: number) => new Team(mapName(name, year, firstFourMappingForYear, gender), index + 1)
             )
         );
     }
@@ -455,7 +460,8 @@ export interface BracketHistoryEntry {
 export async function getUserBracketHistory(user: User | null, gender: Gender = 'men'): Promise<BracketHistoryEntry[]> {
     if (!user) return [];
 
-    const years = Object.keys(bracketData).sort((a, b) => +b - +a); // Descending years
+    const tournaments = gender === 'men' ? mensTournaments : womensTournaments;
+    const years = Object.keys(tournaments).sort((a, b) => +b - +a); // Descending years
     const history: BracketHistoryEntry[] = [];
 
     for (const year of years) {

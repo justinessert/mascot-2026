@@ -106,6 +106,7 @@ export interface TournamentContextValue {
     getBracketData: () => Record<string, string[]> | null;
     getRegionOrder: () => string[] | null;
     getFirstFourMapping: () => Record<string, string> | null;
+    getCutoffTime: () => Date | undefined;
     hasBracketData: () => boolean;
     getSelectionSundayTime: () => Date | undefined;
 }

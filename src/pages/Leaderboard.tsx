@@ -13,7 +13,6 @@ import { db } from '../services/firebase';
 import { useTournament } from '../hooks/useTournament';
 import { useAuth } from '../hooks/useAuth';
 import { Team } from '../services/bracketService';
-import { cutOffTimes, womensCutOffTimes } from '../constants/bracketData';
 import ComingSoon from '../components/ComingSoon';
 import type { Gender } from '../types/bracket';
 import './Leaderboard.css';
@@ -31,7 +30,7 @@ interface LeaderboardBracket {
 
 function Leaderboard(): React.ReactElement {
     const navigate = useNavigate();
-    const { selectedYear, selectedGender, hasBracketData, getSelectionSundayTime } = useTournament();
+    const { selectedYear, selectedGender, getCutoffTime, hasBracketData, getSelectionSundayTime } = useTournament();
     const { user } = useAuth();
 
     // Convert UI gender ('M'/'W') to service gender ('men'/'women')
@@ -45,9 +44,8 @@ function Leaderboard(): React.ReactElement {
 
     // Check if we're past the cutoff time (can view all brackets)
     const isPastCutoff = (): boolean => {
-        const cutoffMap = selectedGender === 'W' ? womensCutOffTimes : cutOffTimes;
-        const cutoff = cutoffMap[selectedYear];
-        return cutoff && new Date() >= cutoff;
+        const cutoff = getCutoffTime();
+        return !!cutoff && new Date() >= cutoff;
     };
 
     // Check if a bracket row is the current user's

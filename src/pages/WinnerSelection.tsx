@@ -14,7 +14,6 @@ import { useState, useEffect, useRef, Fragment } from 'react';
 import { useTournament } from '../hooks/useTournament';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigationBlocker } from '../hooks/useNavigationBlocker';
-import { cutOffTimes, womensCutOffTimes } from '../constants/bracketData';
 import { formatTeamName, formatMascotName } from '../constants/nicknames';
 import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket } from '../services/bracketService';
 import ComingSoon from '../components/ComingSoon';
@@ -32,7 +31,7 @@ type PreviousPicksMap = Record<string, Record<number, (TeamData | null)[]>>;
 
 function WinnerSelection(): React.ReactElement {
     const { safeNavigate, setBlocker, clearBlocker } = useNavigationBlocker();
-    const { selectedYear, selectedGender, setSelectedGender, getBracketData, getRegionOrder, getFirstFourMapping, hasBracketData, getSelectionSundayTime } = useTournament();
+    const { selectedYear, selectedGender, setSelectedGender, getBracketData, getRegionOrder, getFirstFourMapping, getCutoffTime, hasBracketData, getSelectionSundayTime } = useTournament();
     const { user } = useAuth();
 
     // Convert UI gender ('M'/'W') to service gender ('men'/'women')
@@ -55,9 +54,8 @@ function WinnerSelection(): React.ReactElement {
 
     // Check if we're past the cutoff time (no more saves/publishes allowed)
     const isPastCutoff = (): boolean => {
-        const cutoffMap = selectedGender === 'W' ? womensCutOffTimes : cutOffTimes;
-        const cutoff = cutoffMap[selectedYear];
-        return cutoff && new Date() >= cutoff;
+        const cutoff = getCutoffTime();
+        return !!cutoff && new Date() >= cutoff;
     };
 
     // Check if user has unsaved completed bracket
@@ -657,8 +655,7 @@ function WinnerSelection(): React.ReactElement {
                 (() => {
                     const playInTeams = currentMatchup.filter(team => team.name.includes('_or_'));
 
-                    const cutoffMap = selectedGender === 'M' ? cutOffTimes : womensCutOffTimes;
-                    const cutoffDate = cutoffMap[selectedYear];
+                    const cutoffDate = getCutoffTime();
 
                     const timeString = cutoffDate ? cutoffDate.toLocaleString('en-US', {
                         weekday: 'long',

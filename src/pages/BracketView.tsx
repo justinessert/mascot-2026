@@ -9,7 +9,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { loadBracketByUserId, Region } from '../services/bracketService';
-import { regionOrder, womensRegionOrder } from '../constants/bracketData';
+import { mensTournaments, womensTournaments } from '../constants/bracketData';
 import FullBracketDisplay from '../components/FullBracketDisplay';
 import type { Gender } from '../types/bracket';
 import './FullBracket.css'; // Reuse FullBracket styles
@@ -84,9 +84,10 @@ function BracketView(): React.ReactElement {
         );
     }
 
-    const currentRegionOrder = genderPath === 'women'
-        ? (womensRegionOrder[numericYear] || womensRegionOrder[2025])
-        : (regionOrder[numericYear] || regionOrder[2025]);
+    // Get region order from tournament config
+    const tournaments = genderPath === 'women' ? womensTournaments : mensTournaments;
+    const config = tournaments[numericYear] || tournaments[2025];
+    const currentRegionOrder = config?.regionOrder || [];
 
     return (
         <FullBracketDisplay
@@ -96,9 +97,10 @@ function BracketView(): React.ReactElement {
             year={year || '2025'}
             backLink={backLink}
             backLinkText={backLinkText}
-            regionOrder={currentRegionOrder || []}
+            regionOrder={currentRegionOrder}
         />
     );
 }
 
 export default BracketView;
+

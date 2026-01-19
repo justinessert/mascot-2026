@@ -6,36 +6,33 @@
  */
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-import {
-    bracketData,
-    womensBracketData,
-    regionOrder,
-    womensRegionOrder,
-    firstFourMapping,
-    womensFirstFourMapping,
-    selectionSundayTimes,
-    womensSelectionSundayTimes
-} from '../constants/bracketData';
-import type { GenderCode, TournamentContextValue } from '../types/bracket';
+import { mensTournaments, womensTournaments } from '../constants/bracketData';
+import type { GenderCode, TournamentContextValue, TournamentConfig } from '../types/bracket';
 
 const TournamentContext = createContext<TournamentContextValue | null>(null);
 
+// Get tournament config for a given year and gender
+const getTournamentConfig = (year: number, gender: GenderCode): TournamentConfig | undefined => {
+    const tournaments = gender === 'W' ? womensTournaments : mensTournaments;
+    return tournaments[year];
+};
+
 // Get all available years for a given gender
 const getAvailableYears = (gender: GenderCode): number[] => {
-    const data = gender === 'W' ? womensBracketData : bracketData;
-    return Object.keys(data)
+    const tournaments = gender === 'W' ? womensTournaments : mensTournaments;
+    return Object.keys(tournaments)
         .map(Number)
         .sort((a, b) => b - a); // Most recent first
 };
 
 // Check if a year has actual bracket data for a given gender
 const yearHasData = (year: number, gender: GenderCode): boolean => {
-    const data = gender === 'W' ? womensBracketData[year] : bracketData[year];
-    if (!data) return false;
+    const config = getTournamentConfig(year, gender);
+    if (!config || !config.regions) return false;
 
     // Check first region key to see if it has data
-    const firstRegionKey = Object.keys(data)[0];
-    return !!firstRegionKey && data[firstRegionKey].length > 0;
+    const firstRegionKey = Object.keys(config.regions)[0];
+    return !!firstRegionKey && config.regions[firstRegionKey].length > 0;
 };
 
 interface TournamentProviderProps {
@@ -61,6 +58,11 @@ export function TournamentProvider({ children }: TournamentProviderProps): React
 
     const [selectedYear, setSelectedYear] = useState<number>(getDefaultYear());
 
+    // Get current tournament config
+    const getCurrentConfig = (): TournamentConfig | undefined => {
+        return getTournamentConfig(selectedYear, selectedGender);
+    };
+
     // Handle gender change - may need to adjust year if not available
     const handleGenderChange = (newGender: GenderCode): void => {
         setSelectedGender(newGender);
@@ -78,26 +80,26 @@ export function TournamentProvider({ children }: TournamentProviderProps): React
 
     // Get bracket data for the selected year and gender
     const getBracketData = (): Record<string, string[]> | null => {
-        if (selectedGender === 'W') {
-            return womensBracketData[selectedYear] || womensBracketData[2025] || null;
-        }
-        return bracketData[selectedYear] || bracketData[2025] || null;
+        const config = getCurrentConfig();
+        return config?.regions || null;
     };
 
     // Get region order for the selected year and gender
     const getRegionOrder = (): string[] | null => {
-        if (selectedGender === 'W') {
-            return womensRegionOrder[selectedYear] || womensRegionOrder[2025] || null;
-        }
-        return regionOrder[selectedYear] || regionOrder[2025] || null;
+        const config = getCurrentConfig();
+        return config?.regionOrder || null;
     };
 
     // Get first four mapping for the selected year and gender
     const getFirstFourMapping = (): Record<string, string> | null => {
-        if (selectedGender === 'W') {
-            return womensFirstFourMapping[selectedYear] || {};
-        }
-        return firstFourMapping[selectedYear] || {};
+        const config = getCurrentConfig();
+        return config?.firstFourMapping || null;
+    };
+
+    // Get cutoff time for the selected year and gender
+    const getCutoffTime = (): Date | undefined => {
+        const config = getCurrentConfig();
+        return config?.cutoffTime;
     };
 
     // Check if the selected year/gender has bracket data
@@ -107,10 +109,8 @@ export function TournamentProvider({ children }: TournamentProviderProps): React
 
     // Get Selection Sunday announcement time for current year/gender
     const getSelectionSundayTime = (): Date | undefined => {
-        if (selectedGender === 'W') {
-            return womensSelectionSundayTimes[selectedYear] || selectionSundayTimes[selectedYear];
-        }
-        return selectionSundayTimes[selectedYear];
+        const config = getCurrentConfig();
+        return config?.selectionSundayTime;
     };
 
     const value: TournamentContextValue = {
@@ -123,6 +123,7 @@ export function TournamentProvider({ children }: TournamentProviderProps): React
         getBracketData,
         getRegionOrder,
         getFirstFourMapping,
+        getCutoffTime,
         hasBracketData,
         getSelectionSundayTime,
     };

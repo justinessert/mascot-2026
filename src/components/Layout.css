@@ -246,3 +246,132 @@
         position: relative;
     }
 }
+
+/* Leave Warning Modal */
+.leave-warning-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.leave-warning-modal {
+    background: var(--secondary-bg);
+    border-radius: 16px;
+    padding: 32px 40px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    animation: scaleIn 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.leave-warning-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+}
+
+.leave-warning-modal h3 {
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+    color: var(--primary-text);
+}
+
+.leave-warning-modal p {
+    color: var(--secondary-text);
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 24px;
+}
+
+.leave-warning-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.stay-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+    flex: 1;
+    min-width: 120px;
+}
+
+.stay-btn:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+}
+
+.leave-btn {
+    background: transparent;
+    color: var(--secondary-text);
+    border: 1px solid #444;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease;
+    flex: 1;
+    min-width: 120px;
+}
+
+.leave-btn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Mobile responsive for leave warning */
+@media (max-width: 480px) {
+    .leave-warning-modal {
+        padding: 24px 20px;
+    }
+
+    .leave-warning-buttons {
+        flex-direction: column;
+    }
+
+    .stay-btn,
+    .leave-btn {
+        width: 100%;
+    }
+}

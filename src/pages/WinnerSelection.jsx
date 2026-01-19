@@ -11,9 +11,9 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTournament } from '../hooks/useTournament.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
+import { useNavigationBlocker } from '../hooks/useNavigationBlocker.jsx';
 import { bracketData, cutOffTimes, regionOrder, womensBracketData, womensCutOffTimes } from '../constants/bracketData';
 import { getMascotName, formatTeamName, formatMascotName } from '../constants/nicknames';
 import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket } from '../services/bracketService';
@@ -21,7 +21,7 @@ import ComingSoon from '../components/ComingSoon';
 import './WinnerSelection.css';
 
 function WinnerSelection() {
-    const navigate = useNavigate();
+    const { safeNavigate, setBlocker, clearBlocker } = useNavigationBlocker();
     const { selectedYear, selectedGender, setSelectedGender, getBracketData, getRegionOrder, getFirstFourMapping } = useTournament();
     const { user } = useAuth();
 
@@ -40,6 +40,40 @@ function WinnerSelection() {
     const isInitializing = useRef(false);
     const [hasOtherGenderBracket, setHasOtherGenderBracket] = useState(true); // Default true to hide prompts until checked
     const [expandedImage, setExpandedImage] = useState(null); // For magnifying glass popup
+    const [isModified, setIsModified] = useState(false); // Track if bracket changed since last save
+    const [previousPicks, setPreviousPicks] = useState({}); // To track picks before reset
+
+    // Check if user has unsaved completed bracket
+    const hasUnsavedBracket = champion && !saved;
+
+    // Register navigation blocker when there's an unsaved bracket
+    useEffect(() => {
+        if (hasUnsavedBracket) {
+            setBlocker(
+                () => true,  // Block condition - always block when this is set
+                "You haven't saved your bracket yet! If you leave now, your selections won't be saved."
+            );
+        } else {
+            clearBlocker();
+        }
+
+        // Cleanup on unmount
+        return () => clearBlocker();
+    }, [hasUnsavedBracket, setBlocker, clearBlocker]);
+
+    // Handle browser refresh/close (this still needs to be in the component)
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            if (hasUnsavedBracket) {
+                e.preventDefault();
+                e.returnValue = 'You have an unsaved bracket. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedBracket]);
 
     // Check if user has the OTHER gender bracket for this year
     useEffect(() => {
@@ -153,6 +187,7 @@ function WinnerSelection() {
         setBracketName(savedBracket.name || savedBracket.bracketName || '');
         setSaved(!!savedBracket.name);
         setPublished(savedBracket.published || false);
+        setIsModified(false);
 
         // Check if we have a champion
         const finalFour = savedBracket.regions.final_four;
@@ -251,6 +286,7 @@ function WinnerSelection() {
         setBracketName('');
         setSaved(false);
         setPublished(false);
+        setIsModified(false);
         setLoading(false);
     };
 
@@ -313,6 +349,8 @@ function WinnerSelection() {
         setRegions(newRegions);
         setCurrentRegionName(nextRegionName);
         setRandomizedMatchup(nextMatchup);
+        setSaved(false);
+        setIsModified(true);
 
         // Save to memory
         saveToMemory(newRegions, bracketName, nextRegionName, nextMatchup);
@@ -330,6 +368,44 @@ function WinnerSelection() {
         const region = regions[regionName];
         if (region) {
             setCurrentRegionName(regionName);
+            // If the region is complete, we'll show the winner screen (which now has a reset button)
+            // If it's not complete, we show the current matchup
+            setRandomizedMatchup(region.getCurrentMatchup() || []);
+        }
+    };
+
+    // Reset a specific region to allow re-picking
+    const resetRegion = (regionName) => {
+        const region = regions[regionName];
+        if (region) {
+            // Save current picks before resetting - MUST deep copy since reset() mutates in place
+            const bracketSnapshot = JSON.parse(JSON.stringify(region.toDict().bracket));
+            setPreviousPicks(prev => ({
+                ...prev,
+                [regionName]: bracketSnapshot
+            }));
+
+            region.reset(); // This mutates the bracket arrays in place
+
+            // If we reset a region, we definitely don't have a champion anymore
+            setChampion(null);
+            setSaved(false);
+            setIsModified(true);
+
+            // If it's not final_four, we also need to clear that region's slot in final_four
+            if (regionName !== 'final_four') {
+                const finalFour = regions.final_four;
+                const regionOrder = getRegionOrder();
+                const idx = regionOrder.indexOf(regionName);
+                if (finalFour) {
+                    finalFour.clearSlot(idx); // We'll need a clearSlot method in Region class
+                }
+            }
+
+            // Update state
+            const newRegions = { ...regions };
+            setRegions(newRegions);
+            setCurrentRegionName(regionName);
             setRandomizedMatchup(region.getCurrentMatchup() || []);
         }
     };
@@ -340,10 +416,36 @@ function WinnerSelection() {
         return region?.getChampion();
     };
 
+    /**
+     * Check if a team was the previously selected winner for the current matchup
+     */
+    const checkPreviousPick = (teamName) => {
+        const region = getCurrentRegion();
+        const prevBracket = previousPicks[currentRegionName];
+
+        if (typeof window !== 'undefined') window.debug_previousPicks = previousPicks;
+
+        if (!region || !prevBracket) return false;
+
+        const roundIndex = region.roundIndex;
+        const matchupIndex = region.currentMatchupIndex;
+        const nextRoundIndex = String(roundIndex + 1);
+        const position = Math.floor(matchupIndex / 2);
+
+        // Check if prevBracket has this round and position
+        if (prevBracket[nextRoundIndex] && prevBracket[nextRoundIndex][position]) {
+            const prevWinnerName = prevBracket[nextRoundIndex][position].name;
+            const match = prevWinnerName === teamName;
+            return match;
+        }
+
+        return false;
+    };
+
     // Handle saving the bracket
     const handleSaveBracket = async () => {
         if (!user) {
-            navigate('/login?redirect=/bracket/pick');
+            safeNavigate('/login?redirect=/bracket/pick');
             return;
         }
 
@@ -353,9 +455,16 @@ function WinnerSelection() {
         }
 
         try {
-            await saveBracket(user, selectedYear, regions, bracketName, false, genderPath);
+            // If already published, update both the saved bracket AND the leaderboard entry
+            if (published) {
+                await publishBracket(user, selectedYear, regions, bracketName, champion, genderPath, true);
+            } else {
+                await saveBracket(user, selectedYear, regions, bracketName, false, genderPath);
+            }
+
             setSaved(true);
-            alert('Bracket saved successfully!');
+            setIsModified(false);
+            alert('Bracket updated successfully!');
         } catch (error) {
             console.error('Error saving bracket:', error);
             alert('Failed to save bracket. Please try again.');
@@ -375,6 +484,26 @@ function WinnerSelection() {
         } catch (error) {
             console.error('Error publishing bracket:', error);
             alert('Failed to publish bracket. Please try again.');
+        }
+    };
+
+    // Start editing picks again
+    const handleEditPicks = () => {
+        setChampion(null);
+
+        // Populate previousPicks with current state of all regions before hiding champion view
+        // Deep copy to avoid mutation issues
+        const currentPicks = {};
+        Object.keys(regions).forEach(name => {
+            currentPicks[name] = JSON.parse(JSON.stringify(regions[name].toDict().bracket));
+        });
+        setPreviousPicks(currentPicks);
+        if (typeof window !== 'undefined') window.debug_previousPicks = currentPicks;
+
+        // Just stay on current region or go to first region
+        const regionOrder = getRegionOrder();
+        if (!currentRegionName) {
+            setCurrentRegionName(regionOrder[0]);
         }
     };
 
@@ -414,15 +543,24 @@ function WinnerSelection() {
                                 type="text"
                                 id="bracketName"
                                 value={bracketName}
-                                onChange={(e) => setBracketName(e.target.value)}
+                                onChange={(e) => {
+                                    setBracketName(e.target.value);
+                                    setSaved(false);
+                                    setIsModified(true);
+                                }}
                                 placeholder="My Bracket 2025"
-                                disabled={saved}
                             />
                         </div>
 
                         <div className="button-group">
                             <button
-                                onClick={() => navigate('/bracket/view/full')}
+                                onClick={handleEditPicks}
+                                className="secondary-btn"
+                            >
+                                Edit Picks
+                            </button>
+                            <button
+                                onClick={() => safeNavigate('/bracket/view/full')}
                                 className="secondary-btn"
                             >
                                 View Bracket
@@ -430,10 +568,10 @@ function WinnerSelection() {
 
                             {!user && (
                                 <>
-                                    <button onClick={() => navigate('/login?redirect=/bracket/pick')} className="secondary-btn">
+                                    <button onClick={() => safeNavigate('/login?redirect=/bracket/pick')} className="secondary-btn">
                                         Log In
                                     </button>
-                                    <button onClick={() => navigate('/signup')} className="secondary-btn">
+                                    <button onClick={() => safeNavigate('/signup')} className="secondary-btn">
                                         Sign Up
                                     </button>
                                 </>
@@ -443,10 +581,10 @@ function WinnerSelection() {
                                 <>
                                     <button
                                         onClick={handleSaveBracket}
-                                        disabled={saved}
+                                        disabled={saved && !isModified}
                                         className="primary-btn"
                                     >
-                                        {saved ? 'Saved ✓' : 'Save Bracket'}
+                                        {saved ? (isModified ? 'Update Changes' : 'Saved ✓') : 'Save Bracket'}
                                     </button>
                                     <button
                                         onClick={handlePublishBracket}
@@ -529,7 +667,13 @@ function WinnerSelection() {
                     )}
                     <p className="mascot-name">{formatMascotName(regionChamp.name)}</p>
                     <p className="team-name">{formatTeamName(regionChamp.name)}</p>
-                    <p className="winner-message">Select another region below to continue picking</p>
+                    <button
+                        className="secondary-btn"
+                        onClick={() => resetRegion(currentRegionName)}
+                        style={{ marginTop: '20px', width: '100%' }}
+                    >
+                        Reset Picks for This Region
+                    </button>
                 </div>
             )}
 
@@ -556,7 +700,10 @@ function WinnerSelection() {
                                         <div className="sub-team top">
                                             <div className="sub-team-info">
                                                 <p className="team-name">{subTeams[0].displayName}</p>
-                                                <p className="mascot-name">{subTeams[0].mascot}</p>
+                                                <p className="mascot-name">
+                                                    {subTeams[0].mascot}
+                                                    {checkPreviousPick(subTeams[0].name) && <span className="previous-pick-star">*</span>}
+                                                </p>
                                             </div>
                                             <RenderImageWithMagnifier src={subTeams[0].image} alt={subTeams[0].name} />
                                         </div>
@@ -564,7 +711,10 @@ function WinnerSelection() {
                                         <div className="sub-team bottom">
                                             <div className="sub-team-info">
                                                 <p className="team-name">{subTeams[1].displayName}</p>
-                                                <p className="mascot-name">{subTeams[1].mascot}</p>
+                                                <p className="mascot-name">
+                                                    {subTeams[1].mascot}
+                                                    {checkPreviousPick(subTeams[1].name) && <span className="previous-pick-star">*</span>}
+                                                </p>
                                             </div>
                                             <RenderImageWithMagnifier src={subTeams[1].image} alt={subTeams[1].name} />
                                         </div>
@@ -580,7 +730,10 @@ function WinnerSelection() {
                                 {team.image && (
                                     <RenderImageWithMagnifier src={team.image} alt={team.name} />
                                 )}
-                                <p className="mascot-name">{formatMascotName(team.name)}</p>
+                                <p className="mascot-name">
+                                    {formatMascotName(team.name)}
+                                    {checkPreviousPick(team.name) && <span className="previous-pick-star">*</span>}
+                                </p>
                                 <p className="team-name">{formatTeamName(team.name)}</p>
                             </div>
                         );

@@ -210,6 +210,38 @@ export class Region {
             this.bracket[0][position] = team;
         }
     }
+
+    /**
+     * Clear a specific team from the first round (used for final four)
+     */
+    clearSlot(idx) {
+        const mapping = {
+            0: 0,
+            1: 2,
+            2: 3,
+            3: 1
+        };
+        const position = mapping[idx];
+        if (position !== undefined && this.bracket[0]) {
+            this.bracket[0][position] = null;
+            // When we clear a slot, we need to reset the progress too
+            this.reset();
+        }
+    }
+
+    /**
+     * Reset the region to its initial state
+     */
+    reset() {
+        // Keep the first round (bracket[0]), but clear all subsequent rounds
+        for (let i = 1; i < this.bracket.length; i++) {
+            this.bracket[i].fill(null);
+        }
+        this.currentMatchupIndex = 0;
+        this.roundIndex = 0;
+        this.champion = null;
+        this.nPicks = 0;
+    }
 }
 
 /**
@@ -347,8 +379,9 @@ export async function loadBracketByUserId(userId, year, gender = 'men') {
  * @param {string} name - Bracket name
  * @param {Object} champion - Champion team
  * @param {string} gender - 'men' or 'women'
+ * @param {boolean} isUpdate - Whether this is an update to an existing entry
  */
-export async function publishBracket(user, year, regions, name, champion, gender = 'men') {
+export async function publishBracket(user, year, regions, name, champion, gender = 'men', isUpdate = false) {
     if (!user) {
         throw new Error('User not authenticated');
     }
@@ -356,16 +389,24 @@ export async function publishBracket(user, year, regions, name, champion, gender
     // Use doc() with user.uid as the document ID (enforces one entry per user per year)
     const leaderboardEntryRef = doc(db, `leaderboard/${gender}/years/${year}/entries/${user.uid}`);
 
-    await setDoc(leaderboardEntryRef, {
+    const data = {
         bracketId: user.uid,
         bracketName: name,
         userName: user.displayName || 'Anonymous',
-        score: 0,
         timestamp: new Date(),
         champion: champion ? champion.toDict() : null,
-    });
+    };
 
-    // Mark as published in saved bracket
+    if (isUpdate) {
+        // Update existing entry without touching the score
+        await setDoc(leaderboardEntryRef, data, { merge: true });
+    } else {
+        // Create new entry with initial score
+        data.score = 0;
+        await setDoc(leaderboardEntryRef, data);
+    }
+
+    // Mark as published in saved bracket (the saveBracket service handles the 'published' flag)
     await saveBracket(user, year, regions, name, true, gender);
 }
 

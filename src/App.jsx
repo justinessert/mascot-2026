@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
+import { NavigationBlockerProvider } from './hooks/useNavigationBlocker.jsx';
 
 // Page imports
 import Home from './pages/Home';
@@ -20,29 +21,31 @@ import './App.css';
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          {/* Main routes */}
-          <Route index element={<Home />} />
-          <Route path="login" element={<Login />} />
-          <Route path="signup" element={<Signup />} />
-          <Route path="forgot-password" element={<ForgotPassword />} />
-          <Route path="reset-password" element={<ResetPassword />} />
-          <Route path="leaderboard" element={<Leaderboard />} />
-          <Route path="info" element={<Info />} />
-          <Route path="profile" element={<Profile />} />
+      <NavigationBlockerProvider>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            {/* Main routes */}
+            <Route index element={<Home />} />
+            <Route path="login" element={<Login />} />
+            <Route path="signup" element={<Signup />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
+            <Route path="info" element={<Info />} />
+            <Route path="profile" element={<Profile />} />
 
-          {/* Bracket routes */}
-          <Route path="bracket" element={<Navigate to="/bracket/pick" replace />} />
-          <Route path="bracket/pick" element={<WinnerSelection />} />
-          <Route path="bracket/view/full" element={<FullBracket />} />
-          <Route path="bracket/view/:region" element={<BracketDisplay />} />
-          <Route path="bracket/:year/:uuid" element={<BracketView />} />
+            {/* Bracket routes */}
+            <Route path="bracket" element={<Navigate to="/bracket/pick" replace />} />
+            <Route path="bracket/pick" element={<WinnerSelection />} />
+            <Route path="bracket/view/full" element={<FullBracket />} />
+            <Route path="bracket/view/:region" element={<BracketDisplay />} />
+            <Route path="bracket/:year/:uuid" element={<BracketView />} />
 
-          {/* Catch-all redirect */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Route>
-      </Routes>
+            {/* Catch-all redirect */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Route>
+        </Routes>
+      </NavigationBlockerProvider>
     </BrowserRouter>
   );
 }

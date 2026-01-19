@@ -8,16 +8,19 @@
  * - Consistent page structure
  */
 
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { useTournament } from '../hooks/useTournament.jsx';
+import { useNavigationBlocker } from '../hooks/useNavigationBlocker.jsx';
 import './Layout.css';
 
 function Layout() {
     const [menuOpen, setMenuOpen] = useState(false);
     const [selectorOpen, setSelectorOpen] = useState(false);
-    const navigate = useNavigate();
+
+    // Get safe navigation from blocker hook
+    const { safeNavigate, showWarning, confirmLeave, cancelLeave } = useNavigationBlocker();
 
     // Get user and logout function from our auth hook
     const { user, logout } = useAuth();
@@ -39,14 +42,14 @@ function Layout() {
     const closeSelector = () => setSelectorOpen(false);
 
     const handleNavigation = (path) => {
-        navigate(path);
+        safeNavigate(path);
         closeMenu();
     };
 
     const handleLogout = async () => {
         try {
             await logout();
-            navigate('/');
+            safeNavigate('/');
             closeMenu();
         } catch (error) {
             console.error('Logout error:', error);
@@ -164,6 +167,25 @@ function Layout() {
             <main className="main-content">
                 <Outlet />
             </main>
+
+            {/* Navigation Warning Modal */}
+            {showWarning && (
+                <div className="leave-warning-overlay" onClick={cancelLeave}>
+                    <div className="leave-warning-modal" onClick={e => e.stopPropagation()}>
+                        <div className="leave-warning-icon">⚠️</div>
+                        <h3>Unsaved Bracket</h3>
+                        <p>You haven't saved your bracket yet! If you leave now, your selections won't be saved.</p>
+                        <div className="leave-warning-buttons">
+                            <button className="stay-btn" onClick={cancelLeave}>
+                                Stay & Save
+                            </button>
+                            <button className="leave-btn" onClick={confirmLeave}>
+                                Leave Anyway
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

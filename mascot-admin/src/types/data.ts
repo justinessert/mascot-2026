@@ -26,7 +26,11 @@ export type SchoolsData = School[];
 
 export interface TeamAuditData {
     teamKey: string;
-    mappedNcaaName: string;
+    mappedNcaaName: string; // The explicit mapping (if any)
+    newMappedNcaaName: string; // The explicit mapping (if any)
+    ncaaName: string;       // The final resolved name used for validation
+    nickname: string;
+    newNickname: string;
     hasNickname: boolean;
     hasImage: boolean;
     isValidNcaaName: boolean;

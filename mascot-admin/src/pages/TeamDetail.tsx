@@ -1,133 +1,300 @@
 // Redesigned TeamDetail Component - "Your Champion" Style
-import { useParams, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useDataAudit } from '../hooks/useDataAudit';
+import ImageUploadModal from '../components/ImageUploadModal';
+import schoolsDataRaw from '@shared/schools.json';
+
+const schools = schoolsDataRaw as Array<{ slug: string }>;
 
 function TeamDetail() {
     const { teamKey } = useParams<{ teamKey: string }>();
-    const { data, loading } = useDataAudit();
+    const navigate = useNavigate();
+    const { data } = useDataAudit();
+    const [team, setTeam] = useState<any | null>(null);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [nicknameInput, setNicknameInput] = useState('');
+    const [mappedNameInput, setMappedNameInput] = useState('');
+    const [pendingImage, setPendingImage] = useState<{ blob: Blob, url: string } | null>(null);
 
-    if (loading) return (
-        <div className="page-container">
-            <div className="loading-message" style={{ marginTop: '2rem', textAlign: 'center' }}>
-                <h3>Loading Team Details...</h3>
-            </div>
-        </div>
-    );
+    useEffect(() => {
+        if (data && teamKey) {
+            const foundTeam = data.find(t => t.teamKey === teamKey);
+            setTeam(foundTeam || null);
+            if (foundTeam) {
+                setNicknameInput(foundTeam.nickname || '');
+                setMappedNameInput(foundTeam.mappedNcaaName || '');
+            }
+        }
+    }, [data, teamKey]);
 
-    const team = data.find(t => t.teamKey === teamKey);
+    // Handle image selection from modal (don't download yet)
+    const handleImageQueue = (blob: Blob) => {
+        const url = URL.createObjectURL(blob);
+        setPendingImage({ blob, url });
+        setIsUploadModalOpen(false); // Close modal
+    };
+
+    // Staging Submit
+    const handleStageChanges = async () => {
+        if (!team) return;
+
+        // 0. Validate Mapped NCAA Name
+        const trimmedMapping = mappedNameInput.trim();
+        if (trimmedMapping) {
+            const isValid = schools.some(s => s.slug === trimmedMapping);
+            if (!isValid) {
+                alert(`Invalid Mapped NCAA Name: "${trimmedMapping}".\n\nThis name does not exist in the schools database. Please check the spelling or validity.`);
+                return;
+            }
+        }
+
+        // 1. Process Image - Upload to Temp
+        if (pendingImage) {
+            try {
+                // Convert Blob to Base64
+                const reader = new FileReader();
+                reader.readAsDataURL(pendingImage.blob);
+                reader.onloadend = async () => {
+                    const base64data = reader.result;
+
+                    const response = await fetch('/api/stage-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            teamKey: team.teamKey,
+                            imageBase64: base64data
+                        })
+                    });
+
+                    if (!response.ok) {
+                        alert('Failed to stage image on server!');
+                    } else {
+                        finalizeStage();
+                    }
+                };
+            } catch (err) {
+                console.error(err);
+                alert('Error processing image');
+                return;
+            }
+        } else {
+            finalizeStage();
+        }
+
+        function finalizeStage() {
+            if (!team) return;
+            // 2. Persist to LocalStorage (Staging)
+            const stagedDataStr = localStorage.getItem('mascot_admin_staged_changes');
+            const stagedData = stagedDataStr ? JSON.parse(stagedDataStr) : {};
+
+            stagedData[team.teamKey] = {
+                nickname: nicknameInput,
+                mappedNcaaName: mappedNameInput,
+                // Track visual state
+                hasImage: !!pendingImage || team.hasImage
+            };
+
+            localStorage.setItem('mascot_admin_staged_changes', JSON.stringify(stagedData));
+
+            // 3. Redirect to Dashboard
+            navigate('/');
+        }
+    };
+
+    // Cleanup object URLs
+    useEffect(() => {
+        return () => {
+            if (pendingImage) URL.revokeObjectURL(pendingImage.url);
+        };
+    }, [pendingImage]);
 
     if (!team) {
         return (
             <div className="page-container">
-                <div className="empty-message" style={{ background: 'var(--secondary-bg)', padding: '40px', borderRadius: '16px', maxWidth: '500px', margin: '40px auto' }}>
-                    <h3>Team Not Found</h3>
-                    <p>The team "{teamKey}" could not be found.</p>
-                    <Link to="/" className="back-btn" style={{ justifyContent: 'center', marginTop: '1rem' }}>← Back to Dashboard</Link>
+                <div className="loading-message" style={{ marginTop: '2rem', textAlign: 'center' }}>
+                    <h3>Loading Team Details...</h3>
                 </div>
             </div>
         );
     }
 
+    // Use pending image if available, else current or fallback
+    const displayImageUrl = pendingImage
+        ? pendingImage.url
+        : (team.hasImage ? `/assets/teams/${team.teamKey}.jpg` : null);
+
+    // Validation for "Stage Changes" button
+    const hasImage = !!displayImageUrl;
+    const hasNickname = nicknameInput.trim().length > 0;
+
+
+    // Check validation completeness
+    const canStage = hasImage && hasNickname;
+
+
     return (
-        <div className="container">
-            <Link to="/" className="back-btn" style={{ display: 'inline-flex', marginBottom: '0' }}>← Back to Dashboard</Link>
+        <div className="page-container">
+            <div className="container">
+                <Link to="/" className="back-btn">← Back to Dashboard</Link>
 
-            <div className="champion-display">
-                <h2>{team.teamKey}</h2>
+                {/* Champion Display Card */}
+                <div className="champion-display">
+                    {/* Header with Status Badge */}
+                    {/* Header */}
+                    <h2>{team.teamKey}</h2>
 
-                {!team.isComplete && (
-                    <div className="info-banner" style={{ justifyContent: 'center', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', borderColor: '#f59e0b' }}>
-                        ⚠️ Incomplete Data
-                    </div>
-                )}
+                    {/* Status Badge */}
+                    {!team.isComplete && (
+                        <div style={{ marginBottom: '20px' }}>
+                            <span className="status-badge error">Incomplete Data</span>
+                        </div>
+                    )}
 
-                {/* Team Image */}
-                {team.hasImage ? (
-                    <img
-                        src={`/assets/teams/${team.teamKey}.jpg`}
-                        alt={team.teamKey}
-                        className="champion-image"
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                            // Note: text fallback might interfere with layout if image is hidden, 
-                            // maybe show a placeholder div instead if needed, but for now simple hide.
-                        }}
-                    />
-                ) : (
-                    <div className="champion-image" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#2a2a2a', borderRadius: '50%' }}>
-                        <span style={{ fontSize: '3rem' }}>🖼️</span>
-                    </div>
-                )}
-
-                <div className="bracket-form">
-                    {/* Unique Key */}
-                    <div className="form-group">
-                        <label>Unique Team Key</label>
-                        <input
-                            type="text"
-                            value={team.teamKey}
-                            readOnly
-                            disabled
+                    {/* Team Image (Centered) or Missing Icon */}
+                    {displayImageUrl ? (
+                        <img
+                            src={displayImageUrl}
+                            alt={team.teamKey}
+                            className="champion-image"
                         />
+                    ) : (
+                        <div
+                            className="champion-image"
+                            onClick={() => setIsUploadModalOpen(true)}
+                            title="Click to upload image"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: '#2a2a2a',
+                                borderRadius: '50%',
+                                margin: '20px auto',
+                                border: '4px solid #333',
+                                cursor: 'pointer',
+                                transition: 'background-color 0.2s, border-color 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--accent-color)';
+                                e.currentTarget.style.backgroundColor = '#3a3a3a';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = '#333';
+                                e.currentTarget.style.backgroundColor = '#2a2a2a';
+                            }}
+                        >
+                            <span style={{ fontSize: '4rem' }}>🖼️</span>
+                        </div>
+                    )}
+
+                    {/* Nickname / Mascot Name Input */}
+                    <div className="bracket-form" style={{ marginTop: '10px' }}>
+                        <div className="form-group">
+                            <label style={{ display: 'flex', alignItems: 'center' }}>
+                                Mascot Nickname
+                                <div className="tooltip-container">
+                                    <span>ℹ️</span>
+                                    <div className="tooltip-text">
+                                        Formatting Rules:
+                                        <ul className="tooltip-list">
+                                            <li>all lower case</li>
+                                            <li>use spaces to separate words</li>
+                                            <li>no "the" (eg. "eagles" not "the eagles")</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </label>
+                            <input
+                                type="text"
+                                value={nicknameInput}
+                                onChange={(e) => setNicknameInput(e.target.value)}
+                                placeholder="Enter Mascot Nickname"
+                                style={{
+                                    textAlign: 'center',
+                                    fontSize: '1.2rem',
+                                    fontWeight: 'bold',
+                                    color: 'var(--accent-color)'
+                                }}
+                            />
+                        </div>
                     </div>
 
-                    {/* Nickname Status */}
-                    <div className="form-group">
-                        <label>
-                            Mascot Nickname
-                            {team.hasNickname && <span style={{ float: 'right', color: 'var(--accent-success)', fontSize: '0.8rem' }}>✓ verified</span>}
-                        </label>
-                        <input
-                            type="text"
-                            value={team.hasNickname ? "Nickname exists in JSON" : "Missing"}
-                            style={{ fontStyle: team.hasNickname ? 'normal' : 'italic' }}
-                            readOnly
-                        />
-                    </div>
+                    {/* Input Form Area */}
+                    <div className="bracket-form">
+                        <div className="form-group">
+                            <label>
+                                Mapped NCAA Name
+                                {team.isValidNcaaName && (
+                                    <span style={{ color: 'var(--accent-success)', marginLeft: '8px' }}>✓</span>
+                                )}
+                            </label>
+                            <input
+                                type="text"
+                                value={mappedNameInput}
+                                onChange={(e) => setMappedNameInput(e.target.value)}
+                                placeholder={team.ncaaName || 'Enter NCAA Name Mapping'}
+                                style={{
+                                    fontStyle: 'normal',
+                                    color: 'var(--primary-text)',
+                                    opacity: team.isValidNcaaName ? 0.9 : 1,
+                                    // backgroundColor: team.isValidNcaaName ? 'rgba(255,255,255,0.05)' : 'var(--input-bg)'
+                                }}
+                            />
+                            <p style={{ fontSize: '0.8rem', color: 'var(--secondary-text)', marginTop: '0.25rem' }}>
+                                Mapped from: <code>{team.teamKey}</code>.
+                                {team.mappedNcaaName
+                                    ? ' Uses explicit mapping.'
+                                    : ' Uses default mapping (hyphenated key).'}
+                                {team.isValidNcaaName
+                                    ? ' Matches a known school.'
+                                    : ' No match found in schools database.'}
+                            </p>
+                        </div>
 
-                    {/* NCAA Mapping */}
-                    <div className="form-group">
-                        <label>
-                            NCAA Mapping
-                            {team.isValidNcaaName
-                                ? <span style={{ float: 'right', color: 'var(--accent-success)', fontSize: '0.8rem' }}>✓ valid match</span>
-                                : <span style={{ float: 'right', color: 'var(--accent-danger)', fontSize: '0.8rem' }}>✗ invalid</span>
-                            }
-                        </label>
-                        <input
-                            type="text"
-                            value={team.mappedNcaaName || `Default: ${team.teamKey.replace(/_/g, '-')}`}
-                            readOnly
-                        />
-                        <p style={{ fontSize: '0.8rem', color: 'var(--secondary-text)', marginTop: '6px' }}>
-                            {team.isValidNcaaName ? "Matches school database." : "No matching school found."}
-                        </p>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="button-group">
-                        <button className="secondary-btn" disabled>Edit Details</button>
-                        <button className="primary-btn" disabled>Save Changes</button>
+                        {/* Action Buttons */}
+                        <div className="button-group">
+                            <button className="secondary-button" onClick={() => setIsUploadModalOpen(true)}>
+                                {pendingImage ? "Change Pending Photo" : (team.hasImage ? "Update Photo" : "Upload Photo")}
+                            </button>
+                            <button
+                                className="primary-button"
+                                onClick={handleStageChanges}
+                                disabled={!canStage}
+                                title={!canStage ? "Image and Nickname are required" : "Download image and stage data"}
+                            >
+                                Stage Changes
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Participating Years (Outside card or at bottom) */}
-            <div style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--secondary-text)' }}>
-                <p style={{ marginBottom: '10px', fontSize: '0.9rem', textTransform: 'uppercase' }}>Tournament History</p>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    {team.years.map(year => (
-                        <span key={year} style={{
-                            background: 'var(--secondary-bg)',
-                            padding: '4px 10px',
-                            borderRadius: '4px',
-                            fontSize: '0.85rem',
-                            border: '1px solid var(--border-color)'
-                        }}>
-                            {year}
-                        </span>
-                    ))}
+                {/* Tournament History Section */}
+                <div className="team-history" style={{ marginTop: '40px' }}>
+                    <h3>Tournament History</h3>
+                    <div className="stats-grid">
+                        <div className="stat-card" style={{ gridColumn: 'span 2' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px', justifyContent: 'center' }}>
+                                {team.years.map((year: string) => (
+                                    <span key={year} className="year-tag" style={{
+                                        padding: '4px 8px',
+                                        borderRadius: '4px',
+                                        background: 'rgba(255,255,255,0.1)',
+                                        fontSize: '0.9rem'
+                                    }}>
+                                        {year}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                {/* Image Upload Modal */}
+                <ImageUploadModal
+                    isOpen={isUploadModalOpen}
+                    onClose={() => setIsUploadModalOpen(false)}
+                    onSave={handleImageQueue}
+                />
             </div>
         </div>
     );

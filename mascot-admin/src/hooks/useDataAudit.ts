@@ -76,18 +76,21 @@ export function useDataAudit() {
             const auditResults: TeamAuditData[] = [];
             const schoolsSlugSet = new Set(schools.map(s => s.slug));
 
+            // Check for Staged Data in LocalStorage
+            const stagedDataStr = localStorage.getItem('mascot_admin_staged_changes');
+            const stagedData = stagedDataStr ? JSON.parse(stagedDataStr) : {};
+
             teamMap.forEach((meta, teamKey) => {
-                const hasNickname = !!nicknames[teamKey];
-                // Check for .jpg match
-                const hasImage = existingImages.has(`${teamKey}.jpg`);
+                const teamStage = stagedData[teamKey] || {};
+
+                const nickname = teamStage.nickname || nicknames[teamKey] || '';
+                const hasNickname = !!nickname;
+
+                // Image check: if we staged an image upload, we consider it "hasImage" for the UI (even if file isn't moved yet)
+                const hasImage = teamStage.hasImage || existingImages.has(`${teamKey}.jpg`);
 
                 // Mapped Name Logic:
-                // - If explicitly mapped in specialNcaaNames, use that.
-                // - To validate, we default to the teamKey (with underscores replaced by hyphens) if no mapping.
-                // - The `mappedNcaaName` field in the result should be NULL/empty-string if it's just the default/inferred name (not explicitly mapped).
-                // - BUT we still return a value for checking validity against `schoolsSlugSet`.
-
-                const explicitMapping = specialNcaaNames[teamKey];
+                const explicitMapping = teamStage.mappedNcaaName !== undefined ? teamStage.mappedNcaaName : specialNcaaNames[teamKey];
                 // Inferred logic: replace underscores with hyphens, and "state" (case-insensitive) with "st"
                 const inferredName = teamKey.replace(/_/g, '-').replace(/state/gi, 'st');
                 const validationName = explicitMapping || inferredName;
@@ -101,6 +104,10 @@ export function useDataAudit() {
                     teamKey,
                     // Only return the mapped name if it's an EXPLICIT mapping
                     mappedNcaaName: explicitMapping || '',
+                    newMappedNcaaName: '',
+                    ncaaName: validationName,
+                    nickname: nickname,
+                    newNickname: '',
                     hasNickname,
                     hasImage,
                     isValidNcaaName,

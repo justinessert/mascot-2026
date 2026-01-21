@@ -31,7 +31,7 @@ function FullBracketDisplay({
     bracketName,
     userName,
     year,
-    onBack,
+
     backLink,
     backLinkText,
     regionOrder: providedRegionOrder,

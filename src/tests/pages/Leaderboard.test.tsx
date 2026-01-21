@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import Leaderboard from '../../pages/Leaderboard';
@@ -83,7 +83,7 @@ describe('Leaderboard Page', () => {
 
     it('renders empty state when no brackets found', async () => {
         mockGetDocs.mockResolvedValue({
-            forEach: (cb: any) => [] // Empty list
+            forEach: () => [] // Empty list
         });
 
         render(

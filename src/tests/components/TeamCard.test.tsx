@@ -31,7 +31,7 @@ describe('TeamCard Component', () => {
     it('renders team info correctly', () => {
         render(
             <TeamCard
-                team={mockTeam}
+                team={mockTeam as any}
                 onSelect={mockSelect}
                 onExpandImage={mockExpand}
                 isPreviousPick={false}
@@ -46,7 +46,7 @@ describe('TeamCard Component', () => {
     it('shows star for previous pick', () => {
         render(
             <TeamCard
-                team={mockTeam}
+                team={mockTeam as any}
                 onSelect={mockSelect}
                 onExpandImage={mockExpand}
                 isPreviousPick={true}
@@ -59,7 +59,7 @@ describe('TeamCard Component', () => {
     it('calls onSelect when card is clicked', () => {
         render(
             <TeamCard
-                team={mockTeam}
+                team={mockTeam as any}
                 onSelect={mockSelect}
                 onExpandImage={mockExpand}
                 isPreviousPick={false}
@@ -74,7 +74,7 @@ describe('TeamCard Component', () => {
     it('calls onExpandImage when image is clicked', () => {
         render(
             <TeamCard
-                team={mockTeam}
+                team={mockTeam as any}
                 onSelect={mockSelect}
                 onExpandImage={mockExpand}
                 isPreviousPick={false}

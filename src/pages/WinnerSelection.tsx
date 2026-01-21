@@ -245,7 +245,7 @@ function WinnerSelection(): React.ReactElement {
         setLoading(true);
 
         const bracketData = getBracketData();
-        const regionOrderList = getRegionOrder();
+
 
         // Check if we have data for this year (first region has teams)
         if (!bracketData) {

@@ -22,7 +22,7 @@ describe('Matchup Component', () => {
     };
 
     it('renders two teams correctly', () => {
-        render(<Matchup topTeam={mockTeamA} bottomTeam={mockTeamB} />);
+        render(<Matchup topTeam={mockTeamA as any} bottomTeam={mockTeamB as any} />);
 
         expect(screen.getByText('Formatted teama')).toBeInTheDocument();
         expect(screen.getByText('Formatted teamb')).toBeInTheDocument();
@@ -36,7 +36,7 @@ describe('Matchup Component', () => {
     });
 
     it('renders mixed state (one team and one placeholder)', () => {
-        render(<Matchup topTeam={mockTeamA} bottomTeam={null} />);
+        render(<Matchup topTeam={mockTeamA as any} bottomTeam={null} />);
 
         expect(screen.getByText('Formatted teama')).toBeInTheDocument();
         expect(screen.getByText('—')).toBeInTheDocument();

@@ -5,6 +5,7 @@ import Leaderboard from '../../pages/Leaderboard';
 import * as TournamentHook from '../../hooks/useTournament';
 import * as AuthHook from '../../hooks/useAuth';
 import * as FirestoreModule from 'firebase/firestore';
+import * as LeaderboardService from '../../services/leaderboardService';
 
 // Mock dependencies
 vi.mock('../../hooks/useTournament');
@@ -13,8 +14,22 @@ vi.mock('../../services/firebase', () => ({
     db: {}
 }));
 vi.mock('firebase/firestore');
+vi.mock('../../services/leaderboardService');
 vi.mock('../../components/ComingSoon', () => ({
     default: () => <div data-testid="coming-soon">Coming Soon</div>
+}));
+vi.mock('../../components/LeaderboardSelector', () => ({
+    default: ({ selectedId, onSelect }: any) => (
+        <div data-testid="leaderboard-selector">
+            <span>{selectedId || 'Global'}</span>
+        </div>
+    )
+}));
+vi.mock('../../components/CreateLeaderboardModal', () => ({
+    default: () => null
+}));
+vi.mock('../../components/JoinLeaderboardModal', () => ({
+    default: () => null
 }));
 
 describe('Leaderboard Page', () => {
@@ -52,6 +67,11 @@ describe('Leaderboard Page', () => {
         // Firestore Mocks
         vi.spyOn(FirestoreModule, 'collection').mockReturnValue({} as any);
         vi.spyOn(FirestoreModule, 'getDocs').mockImplementation(mockGetDocs);
+
+        // Leaderboard Service Mocks
+        vi.spyOn(LeaderboardService, 'getAllCustomLeaderboardMeta').mockResolvedValue([]);
+        vi.spyOn(LeaderboardService, 'hasPublishedBracket').mockResolvedValue(false);
+        vi.spyOn(LeaderboardService, 'getCustomLeaderboard').mockResolvedValue(null);
     });
 
     it('shows ComingSoon if no bracket data', () => {
@@ -152,5 +172,35 @@ describe('Leaderboard Page', () => {
         expect(elements.length).toBeGreaterThan(0);
         const scoreElements = screen.getAllByText('150');
         expect(scoreElements.length).toBeGreaterThan(0);
+    });
+
+    it('renders action buttons', async () => {
+        mockGetDocs.mockResolvedValue({
+            forEach: () => []
+        });
+
+        render(
+            <MemoryRouter>
+                <Leaderboard />
+            </MemoryRouter>
+        );
+
+        // Check action buttons are present
+        expect(screen.getByText('Create Leaderboard')).toBeInTheDocument();
+        expect(screen.getByText('Join Leaderboard')).toBeInTheDocument();
+    });
+
+    it('renders leaderboard selector', async () => {
+        mockGetDocs.mockResolvedValue({
+            forEach: () => []
+        });
+
+        render(
+            <MemoryRouter>
+                <Leaderboard />
+            </MemoryRouter>
+        );
+
+        expect(screen.getByTestId('leaderboard-selector')).toBeInTheDocument();
     });
 });

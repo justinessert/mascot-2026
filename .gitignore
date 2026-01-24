@@ -29,3 +29,4 @@ dist-ssr
 **/data/*
 functions/lib/
 mascot-admin/temp/
+firebase_rules.txt

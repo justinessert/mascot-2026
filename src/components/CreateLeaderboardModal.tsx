@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import PasswordInput from './PasswordInput';
 import './LeaderboardModals.css';
 
 interface CreateLeaderboardModalProps {
@@ -105,20 +106,17 @@ function CreateLeaderboardModal({
                             />
                         </div>
 
-                        <div className="form-group">
-                            <label htmlFor="lb-password">Password (optional)</label>
-                            <input
-                                id="lb-password"
-                                type="password"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                placeholder="Leave empty for public access"
-                                disabled={loading}
-                            />
-                            <p className="form-hint">
-                                Set a password to require it when others join
-                            </p>
-                        </div>
+                        <PasswordInput
+                            id="lb-password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            placeholder="Leave empty for public access"
+                            disabled={loading}
+                            label="Password (optional)"
+                        />
+                        <p className="form-hint">
+                            Set a password to require it when others join
+                        </p>
                     </div>
 
                     <div className="modal-footer">

@@ -186,8 +186,8 @@ describe('Leaderboard Page', () => {
         );
 
         // Check action buttons are present
-        expect(screen.getByText('Create Leaderboard')).toBeInTheDocument();
-        expect(screen.getByText('Join Leaderboard')).toBeInTheDocument();
+        expect(screen.getByText('Create')).toBeInTheDocument();
+        expect(screen.getByText('Join')).toBeInTheDocument();
     });
 
     it('renders leaderboard selector', async () => {

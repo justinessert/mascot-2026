@@ -310,56 +310,57 @@ function Leaderboard(): React.ReactElement {
                 </div>
             )}
 
-            {/* Action Buttons Row */}
-            <div className="leaderboard-actions">
-                <div className="action-button-wrapper">
-                    <button
-                        className={`action-btn ${!canCreate ? 'disabled' : ''}`}
-                        onClick={handleCreateClick}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        Create Leaderboard
-                    </button>
-                    {showCreateTooltip && (
-                        <div className="action-tooltip">
-                            Publish a bracket first to create a leaderboard
-                        </div>
-                    )}
+            {/* Leaderboard Controls Row (Selector + Action Buttons) */}
+            <div className="leaderboard-controls">
+                <div className="selector-row">
+                    <LeaderboardSelector
+                        customLeaderboards={customLeaderboards}
+                        selectedId={selectedLeaderboardId}
+                        onSelect={setSelectedLeaderboardId}
+                        loading={loading || loadingCustom}
+                    />
                 </div>
 
-                <div className="action-button-wrapper">
-                    <button
-                        className={`action-btn ${(!canJoin || selectedLeaderboardId === null) ? 'disabled' : ''}`}
-                        onClick={handleJoinClick}
-                        disabled={selectedLeaderboardId === null}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="8.5" cy="7" r="4"></circle>
-                            <line x1="20" y1="8" x2="20" y2="14"></line>
-                            <line x1="23" y1="11" x2="17" y2="11"></line>
-                        </svg>
-                        Join Leaderboard
-                    </button>
-                    {showJoinTooltip && (
-                        <div className="action-tooltip">
-                            You've already joined this leaderboard
-                        </div>
-                    )}
-                </div>
-            </div>
+                <div className="leaderboard-actions">
+                    <div className="action-button-wrapper">
+                        <button
+                            className={`action-btn ${!canCreate ? 'disabled' : ''}`}
+                            onClick={handleCreateClick}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Create
+                        </button>
+                        {showCreateTooltip && (
+                            <div className="action-tooltip">
+                                Publish a bracket first to create a leaderboard
+                            </div>
+                        )}
+                    </div>
 
-            {/* Leaderboard Selector */}
-            <div className="selector-row">
-                <LeaderboardSelector
-                    customLeaderboards={customLeaderboards}
-                    selectedId={selectedLeaderboardId}
-                    onSelect={setSelectedLeaderboardId}
-                    loading={loading || loadingCustom}
-                />
+                    <div className="action-button-wrapper">
+                        <button
+                            className={`action-btn ${(!canJoin || selectedLeaderboardId === null) ? 'disabled' : ''}`}
+                            onClick={handleJoinClick}
+                            disabled={selectedLeaderboardId === null}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="8.5" cy="7" r="4"></circle>
+                                <line x1="20" y1="8" x2="20" y2="14"></line>
+                                <line x1="23" y1="11" x2="17" y2="11"></line>
+                            </svg>
+                            Join
+                        </button>
+                        {showJoinTooltip && (
+                            <div className="action-tooltip">
+                                You've already joined this leaderboard
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* User Stats Header */}
@@ -472,7 +473,7 @@ function Leaderboard(): React.ReactElement {
                 onClose={() => setShowJoinModal(false)}
                 onJoin={handleJoinLeaderboard}
             />
-        </div>
+        </div >
     );
 }
 

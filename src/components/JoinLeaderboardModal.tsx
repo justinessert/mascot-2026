@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import PasswordInput from './PasswordInput';
 import './LeaderboardModals.css';
 
 interface JoinLeaderboardModalProps {
@@ -71,18 +72,14 @@ function JoinLeaderboardModal({
 
                         {error && <div className="modal-error">{error}</div>}
 
-                        <div className="form-group">
-                            <label htmlFor="join-password">Password</label>
-                            <input
-                                id="join-password"
-                                type="password"
-                                value={password}
-                                onChange={e => setPassword(e.target.value)}
-                                placeholder="Enter password"
-                                disabled={loading}
-                                autoFocus
-                            />
-                        </div>
+                        <PasswordInput
+                            id="join-password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            placeholder="Enter password"
+                            disabled={loading}
+                            label="Password"
+                        />
                     </div>
 
                     <div className="modal-footer">

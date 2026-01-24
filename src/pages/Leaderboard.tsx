@@ -238,6 +238,11 @@ function Leaderboard(): React.ReactElement {
             return;
         }
 
+        if (!user) {
+            // Not logged in - can't join
+            return;
+        }
+
         if (userIsMember) {
             // Already a member - show tooltip
             setShowJoinTooltip(true);
@@ -342,9 +347,9 @@ function Leaderboard(): React.ReactElement {
 
                     <div className="action-button-wrapper">
                         <button
-                            className={`action-btn ${(!canJoin || selectedLeaderboardId === null) ? 'disabled' : ''}`}
+                            className={`action-btn ${!canJoin ? 'disabled' : ''}`}
                             onClick={handleJoinClick}
-                            disabled={selectedLeaderboardId === null}
+                            disabled={!canJoin}
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>

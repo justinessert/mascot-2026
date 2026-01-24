@@ -20,6 +20,18 @@ import { db } from './firebase';
 import type { Gender } from '../types/bracket';
 
 /**
+ * Hash a password using SHA-256 via Web Crypto API
+ * Returns a hex string of the hash
+ */
+async function hashPassword(password: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
  * Metadata for a custom leaderboard (used in selector dropdown)
  */
 export interface CustomLeaderboardMeta {
@@ -36,7 +48,7 @@ export interface CustomLeaderboardMeta {
  */
 export interface CustomLeaderboard extends CustomLeaderboardMeta {
     memberIds: string[];
-    password?: string;
+    passwordHash?: string; // Store hash, not plain password
 }
 
 /**
@@ -85,7 +97,7 @@ export async function getAllCustomLeaderboardMeta(
             id: doc.id,
             name: data.name || 'Unnamed',
             description: data.description || '',
-            hasPassword: !!data.password,
+            hasPassword: !!data.passwordHash,
             memberCount: (data.memberIds || []).length,
             creatorId: data.creatorId || '',
         });
@@ -117,8 +129,8 @@ export async function getCustomLeaderboard(
         id: snapshot.id,
         name: data.name || 'Unnamed',
         description: data.description || '',
-        hasPassword: !!data.password,
-        password: data.password, // Include password for validation
+        hasPassword: !!data.passwordHash,
+        passwordHash: data.passwordHash, // Include hash for validation
         memberCount: (data.memberIds || []).length,
         creatorId: data.creatorId || '',
         memberIds: data.memberIds || [],
@@ -209,9 +221,9 @@ export async function createCustomLeaderboard(
         createdAt: new Date(),
     };
 
-    // Only store password if provided
+    // Only store password hash if provided
     if (password.trim()) {
-        data.password = password.trim();
+        data.passwordHash = await hashPassword(password.trim());
     }
 
     await setDoc(docRef, data);
@@ -247,8 +259,11 @@ export async function joinCustomLeaderboard(
     }
 
     // Validate password if required
-    if (leaderboard.password && leaderboard.password !== password.trim()) {
-        return { success: false, error: 'Incorrect password' };
+    if (leaderboard.passwordHash) {
+        const inputHash = await hashPassword(password.trim());
+        if (leaderboard.passwordHash !== inputHash) {
+            return { success: false, error: 'Incorrect password' };
+        }
     }
 
     // Add user to memberIds

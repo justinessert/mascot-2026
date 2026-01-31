@@ -11,6 +11,7 @@ import { mensTournaments } from '../constants/bracketData';
 import BracketSegment from './BracketSegment';
 import Matchup from './Matchup';
 import { Region, Team } from '../services/bracketService';
+import type { CorrectBracket } from '../services/correctBracketService';
 import { ReactNode } from 'react';
 import '../pages/FullBracket.css'; // Reuse existing styles
 
@@ -24,6 +25,9 @@ interface FullBracketDisplayProps {
     backLinkText?: string;
     regionOrder?: string[];
     children?: ReactNode;
+    // Props for correct answer display
+    correctBracket?: CorrectBracket | null;
+    showCorrectAnswers?: boolean;
 }
 
 function FullBracketDisplay({
@@ -35,7 +39,9 @@ function FullBracketDisplay({
     backLink,
     backLinkText,
     regionOrder: providedRegionOrder,
-    children
+    children,
+    correctBracket,
+    showCorrectAnswers = false
 }: FullBracketDisplayProps): React.ReactElement {
     const numericYear = parseInt(String(year), 10);
 
@@ -101,6 +107,9 @@ function FullBracketDisplay({
                             <BracketSegment
                                 bracket={getRegionBracket(regionName)}
                                 reverseOrder={false}
+                                regionName={regionName}
+                                correctAnswers={correctBracket}
+                                showCorrectAnswers={showCorrectAnswers}
                             />
                         </div>
                     ))}
@@ -159,6 +168,9 @@ function FullBracketDisplay({
                             <BracketSegment
                                 bracket={getRegionBracket(regionName)}
                                 reverseOrder={true}
+                                regionName={regionName}
+                                correctAnswers={correctBracket}
+                                showCorrectAnswers={showCorrectAnswers}
                             />
                         </div>
                     ))}

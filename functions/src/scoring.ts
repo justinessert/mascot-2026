@@ -67,6 +67,87 @@ function calculateBracketScore(
     return { score, maxScore };
 }
 
+// 🎯 **Build Correct Bracket from NCAA Game Results**
+interface CorrectGame {
+    winner: string;
+    loser: string;              // The losing team's NCAA name
+    team1: string;              // Actual team in slot 0 (top)
+    team2: string;              // Actual team in slot 1 (bottom)
+    winnerScore: number | null;
+    loserScore: number | null;
+    gameId: string;
+}
+
+interface CorrectBracket {
+    regions: Record<string, Record<string, CorrectGame[]>>;
+    lastUpdated: Date;
+}
+
+function buildCorrectBracket(
+    gameMappings: Record<string, Record<string, string[]>>,
+    ncaaGameResults: Record<string, any>
+): CorrectBracket {
+    const correctBracket: CorrectBracket = {
+        regions: {},
+        lastUpdated: new Date()
+    };
+
+    // Sort regions so final_four is at the end (matching calculateBracketScore)
+    for (const [region, rounds] of Object.entries(gameMappings).sort(([regionA], [regionB]) => {
+        if (regionA === "final_four") return 1;
+        if (regionB === "final_four") return -1;
+        return 0;
+    })) {
+        correctBracket.regions[region] = {};
+
+        for (const [roundKey, gameIds] of Object.entries(rounds)) {
+            const roundNumber = parseInt(roundKey.split("_")[1]);
+            const userRoundOrder = roundOrders[roundNumber];
+
+            // Initialize array with correct size
+            correctBracket.regions[region][roundKey] = [];
+
+            for (let i = 0; i < gameIds.length; i++) {
+                // For non-final_four regions, use roundOrders to determine the correct index
+                // This matches the logic in calculateBracketScore
+                const gameIdx = region === "final_four" ? i : userRoundOrder[i];
+                const gameId = gameIds[i];
+
+                if (!gameId || !ncaaGameResults[gameId]) {
+                    // Game not yet played - push placeholder at the mapped index position
+                    correctBracket.regions[region][roundKey][gameIdx] = {
+                        winner: "",
+                        loser: "",
+                        team1: "",
+                        team2: "",
+                        winnerScore: null,
+                        loserScore: null,
+                        gameId: gameId || ""
+                    };
+                    continue;
+                }
+
+                const game = ncaaGameResults[gameId];
+                const homeScore = parseInt(game.homeScore) || 0;
+                const awayScore = parseInt(game.awayScore) || 0;
+                const loser = game.winner === game.homeTeam ? game.awayTeam : game.homeTeam;
+
+                correctBracket.regions[region][roundKey][gameIdx] = {
+                    winner: game.winner || "",
+                    loser: loser || "",
+                    team1: game.homeTeam || "",  // Home team in slot 0
+                    team2: game.awayTeam || "",  // Away team in slot 1
+                    winnerScore: game.winner === game.homeTeam ? homeScore : awayScore,
+                    loserScore: game.winner === game.homeTeam ? awayScore : homeScore,
+                    gameId: gameId
+                };
+            }
+        }
+    }
+
+    return correctBracket;
+}
+
 // 🎯 **Update Published Bracket Scores**
 export async function updateScores(year: string | number | null = null, gender?: "men" | "women") {
     year = year || DateTime.now().year;
@@ -76,43 +157,7 @@ export async function updateScores(year: string | number | null = null, gender?:
     for (const g of gendersToUpdate) {
         console.log(`📅 Updating ${g} bracket scores for year: ${year}`);
 
-        // **Step 1: Get Published Brackets**
-        const publishedBracketsRef = db.collection(`leaderboard/${g}/years/${year}/entries`);
-        const publishedBracketsSnapshot = await publishedBracketsRef.get();
-
-        if (publishedBracketsSnapshot.empty) {
-            console.warn(`⚠️ No published brackets found for year ${year} (${g}).`);
-            continue;
-        }
-
-        // **Step 2: Fetch each bracket's data**
-        const publishedBrackets = await Promise.all(
-            publishedBracketsSnapshot.docs.map(async (doc) => {
-                const bracket = { id: doc.id, ...doc.data() };
-
-                if (!("bracketId" in bracket)) {
-                    console.warn(`⚠️ Skipping bracket ${doc.id} due to missing bracketId.`);
-                    return null;
-                }
-
-                // Fetch the full bracket from Firestore
-                // New path: brackets/{gender}/years/{year}/users/{userId}
-                // Note: bracketId in leaderboard is basically userId
-                const bracketRef = db.doc(`brackets/${g}/years/${year}/users/${bracket.bracketId}`);
-                const bracketSnapshot = await bracketRef.get();
-
-                if (!bracketSnapshot.exists) {
-                    console.warn(`⚠️ Bracket data missing for bracket ID: ${bracket.bracketId}`);
-                    return { ...bracket, bracketData: null };
-                }
-
-                return { ...bracket, bracketData: bracketSnapshot.data() };
-            })
-        );
-
-        console.log(`📌 Found ${publishedBrackets.length} published brackets.`);
-
-        // **Step 3: Get Game Mappings**
+        // **Step 1: Get Game Mappings (required for correct bracket)**
         const gameMappingsRef = db.doc(`gameMappings/${g}/years/${year}`);
         const gameMappingsSnapshot = await gameMappingsRef.get();
         if (!gameMappingsSnapshot.exists) {
@@ -129,7 +174,7 @@ export async function updateScores(year: string | number | null = null, gender?:
             .filter(id => id !== null && id !== undefined);
         console.log("📌 Game ids to pull:", gameIds);
 
-        // **Step 4: Get NCAA Game Results**
+        // **Step 2: Get NCAA Game Results**
         const ncaaGamesRef = db.collection(`ncaaGames/${g}/games`);
         const ncaaGameResults: Record<string, any> = {};
 
@@ -160,7 +205,48 @@ export async function updateScores(year: string | number | null = null, gender?:
 
         console.log(`📌 Retrieved ${Object.keys(ncaaGameResults).length} NCAA games.`);
 
-        // **Step 5: Score & Update Each Published Bracket**
+        // **Step 3: Build and Store Correct Bracket (always runs)**
+        const correctBracket = buildCorrectBracket(gameMappings, ncaaGameResults);
+        await db.doc(`correctBracket/${g}/years/${year}`).set(correctBracket);
+        console.log(`📌 Correct bracket saved for ${g}/${year}.`);
+
+        // **Step 4: Get Published Brackets (for scoring)**
+        const publishedBracketsRef = db.collection(`leaderboard/${g}/years/${year}/entries`);
+        const publishedBracketsSnapshot = await publishedBracketsRef.get();
+
+        if (publishedBracketsSnapshot.empty) {
+            console.warn(`⚠️ No published brackets found for year ${year} (${g}). Skipping scoring.`);
+            continue;
+        }
+
+        // **Step 5: Fetch each bracket's data**
+        const publishedBrackets = await Promise.all(
+            publishedBracketsSnapshot.docs.map(async (doc) => {
+                const bracket = { id: doc.id, ...doc.data() };
+
+                if (!("bracketId" in bracket)) {
+                    console.warn(`⚠️ Skipping bracket ${doc.id} due to missing bracketId.`);
+                    return null;
+                }
+
+                // Fetch the full bracket from Firestore
+                // New path: brackets/{gender}/years/{year}/users/{userId}
+                // Note: bracketId in leaderboard is basically userId
+                const bracketRef = db.doc(`brackets/${g}/years/${year}/users/${bracket.bracketId}`);
+                const bracketSnapshot = await bracketRef.get();
+
+                if (!bracketSnapshot.exists) {
+                    console.warn(`⚠️ Bracket data missing for bracket ID: ${bracket.bracketId}`);
+                    return { ...bracket, bracketData: null };
+                }
+
+                return { ...bracket, bracketData: bracketSnapshot.data() };
+            })
+        );
+
+        console.log(`📌 Found ${publishedBrackets.length} published brackets.`);
+
+        // **Step 6: Score & Update Each Published Bracket**
         const updatePromises = publishedBrackets.map(async bracket => {
             if (!bracket || !bracket.bracketData) return;
             const { score, maxScore } = calculateBracketScore(bracket, gameMappings, ncaaGameResults, String(year), g);
@@ -173,3 +259,4 @@ export async function updateScores(year: string | number | null = null, gender?:
         console.log(`✅ All ${g} brackets updated successfully!`);
     }
 }
+

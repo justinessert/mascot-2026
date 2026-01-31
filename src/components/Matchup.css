@@ -19,6 +19,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
 }
 
 .matchup-box .team:last-child {
@@ -31,4 +35,95 @@
 
 .matchup-box .bottom-team {
     background: rgba(59, 130, 246, 0.05);
+}
+
+/* Team name and score */
+.matchup-box .team .team-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.matchup-box .team .team-score {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--muted-text, #888);
+    margin-right: 2px;
+}
+
+/* Winner styling - always bold */
+.matchup-box .team.winner .team-name,
+.matchup-box .team .actual-team.winner {
+    font-weight: 700;
+}
+
+/* Status icons */
+.status-icon {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    margin-left: 4px;
+}
+
+/* Correct pick that won - green check */
+.matchup-box .team.correct {
+    background: rgba(34, 197, 94, 0.15);
+}
+
+.matchup-box .team.correct .correct-icon {
+    color: #22c55e;
+    font-weight: bold;
+}
+
+/* Correct pick that lost - subtle red */
+.matchup-box .team.loser {
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.matchup-box .team.loser .loser-icon {
+    color: #ef4444;
+    font-weight: bold;
+    opacity: 0.7;
+}
+
+/* Wrong team scenario - user picked wrong opponent */
+.matchup-box .team.wrong-team {
+    background: rgba(239, 68, 68, 0.1);
+    padding: 4px 10px;
+}
+
+.matchup-box .team.wrong-team .wrong-team-display {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+}
+
+.matchup-box .team.wrong-team .strikethrough-pick {
+    text-decoration: line-through;
+    color: #ef4444;
+    opacity: 0.7;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.matchup-box .team.wrong-team .wrong-icon {
+    color: #ef4444;
+    font-weight: bold;
+    font-size: 0.7rem;
+}
+
+.matchup-box .team.wrong-team .actual-team {
+    color: var(--text-color, #fff);
+    font-size: 0.75rem;
+}
+
+.matchup-box .team.wrong-team .actual-team.winner {
+    font-weight: 700;
+}
+
+/* Pending game (not yet played) */
+.matchup-box .team.pending {
+    opacity: 0.8;
 }

@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { loadBracketByUserId, Region } from '../services/bracketService';
+import { loadCorrectBracket, CorrectBracket } from '../services/correctBracketService';
 import { mensTournaments, womensTournaments } from '../constants/bracketData';
 import FullBracketDisplay from '../components/FullBracketDisplay';
 import type { Gender } from '../types/bracket';
@@ -31,6 +32,7 @@ function BracketView(): React.ReactElement {
     const [bracketName, setBracketName] = useState<string>('');
     const [userName, setUserName] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
+    const [correctBracket, setCorrectBracket] = useState<CorrectBracket | null>(null);
 
     // Determine back link destination
     const locationState = location.state as LocationState | null;
@@ -38,9 +40,10 @@ function BracketView(): React.ReactElement {
     const backLink = fromProfile ? '/profile' : '/leaderboard';
     const backLinkText = fromProfile ? 'Back to Profile' : 'Back to Leaderboard';
 
-    // Load the shared bracket on mount
+    // Load the shared bracket and correct bracket on mount
     useEffect(() => {
         loadSharedBracket();
+        loadCorrectBracket(numericYear, genderPath).then(setCorrectBracket);
     }, [year, uuid, gender]);
 
     const loadSharedBracket = async (): Promise<void> => {
@@ -98,6 +101,8 @@ function BracketView(): React.ReactElement {
             backLink={backLink}
             backLinkText={backLinkText}
             regionOrder={currentRegionOrder}
+            correctBracket={correctBracket}
+            showCorrectAnswers={true}
         />
     );
 }

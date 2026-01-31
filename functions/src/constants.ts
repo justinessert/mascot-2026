@@ -1,7 +1,7 @@
 export const GENDERS = ['men', 'women'] as const;
 export type Gender = typeof GENDERS[number];
 
-import specialNcaaNamesRaw from '../../shared-data/specialNcaaNames.json';
+import specialNcaaNamesRaw from '../data/specialNcaaNames.json';
 export const specialNcaaNames: Record<string, string> = specialNcaaNamesRaw;
 
 export const firstFourMapping: Record<string, Record<string, string>> = {

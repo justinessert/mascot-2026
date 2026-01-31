@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { useTournament } from '../hooks/useTournament';
 import { useAuth } from '../hooks/useAuth';
 import { initializeBracket, loadBracket, Region, loadTemporaryBracket } from '../services/bracketService';
+import { loadCorrectBracket, CorrectBracket } from '../services/correctBracketService';
 import ComingSoon from '../components/ComingSoon';
 import FullBracketDisplay from '../components/FullBracketDisplay';
 import type { Gender } from '../types/bracket';
@@ -24,10 +25,12 @@ function FullBracket(): React.ReactElement {
     const [regions, setRegions] = useState<Record<string, Region>>({});
     const [loading, setLoading] = useState<boolean>(true);
     const [bracketName, setBracketName] = useState<string>('');
+    const [correctBracket, setCorrectBracket] = useState<CorrectBracket | null>(null);
 
     // Load bracket on mount and when year/gender/user changes
     useEffect(() => {
         loadBracketData();
+        loadCorrectBracket(selectedYear, genderPath).then(setCorrectBracket);
     }, [selectedYear, selectedGender, user]);
 
     // Load bracket state from memory
@@ -122,6 +125,8 @@ function FullBracket(): React.ReactElement {
             bracketName={bracketName}
             year={selectedYear}
             regionOrder={getRegionOrder() || []}
+            correctBracket={correctBracket}
+            showCorrectAnswers={true}
         >
             {!user && (
                 <div className="info-banner">

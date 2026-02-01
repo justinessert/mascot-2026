@@ -12,6 +12,7 @@
  */
 
 import { formatTeamName } from '../constants/nicknames';
+import { transformTeamName } from '../utils/teamNameTransform';
 import { Team } from '../services/bracketService';
 import './Matchup.css';
 
@@ -26,6 +27,7 @@ interface MatchupProps {
     topTeamScore?: number | null;  // Score for winner
     bottomTeamScore?: number | null; // Score for loser
     showCorrectAnswers?: boolean;  // Toggle correct answer display
+    userPickedWinner?: Team | null; // The team the user picked to win this matchup
 }
 
 /**
@@ -55,7 +57,8 @@ function Matchup({
     correctTeam2,
     topTeamScore,
     bottomTeamScore,
-    showCorrectAnswers = false
+    showCorrectAnswers = false,
+    userPickedWinner
 }: MatchupProps): React.ReactElement {
 
     /**
@@ -86,18 +89,49 @@ function Matchup({
         }
 
         // Determine if the actual team in this slot is the winner
+        // Use transformed names for comparison
         const isWinner = actualTeam?.toLowerCase() === correctWinner.toLowerCase();
 
         // Check if user picked correctly for this slot
         const userPickedCorrectly = userPick && actualTeam &&
-            userPick.toLowerCase() === actualTeam.toLowerCase();
+            transformTeamName(userPick) === transformTeamName(actualTeam);
 
         if (userPickedCorrectly) {
             // User picked the right team for this slot
+
+            // Logic Update: Only show Red X (correct-loser) if user actively picked this team to win.
+            // Only show Green Check (correct-winner) if user actively picked this team to win.
+
+            let doesUserPickMatchThisTeam = false;
+            // Transformation required because userPickedWinner comes from bracket data (Friendly Name)
+            // and actualTeam comes from correct data (NCAA Key)
+            if (userPickedWinner && actualTeam) {
+                doesUserPickMatchThisTeam = transformTeamName(userPickedWinner.name) === transformTeamName(actualTeam);
+            }
+
             if (isWinner) {
-                return { state: 'correct-winner', userPick, actualTeam, isWinner: true, score };
+                // This team WON.
+                if (doesUserPickMatchThisTeam) {
+                    // User picked them to win -> Green Check
+                    return { state: 'correct-winner', userPick, actualTeam, isWinner: true, score };
+                } else {
+                    // User did NOT pick them (picked the other team).
+                    // This team won, but user was wrong.
+                    // Should be BOLD (because winner) but NO Green Check.
+                    // Returning null state removes any icon but keeps winner bolding (via isWinner)
+                    return { state: null, userPick, actualTeam, isWinner: true, score };
+                }
             } else {
-                return { state: 'correct-loser', userPick, actualTeam, isWinner: false, score };
+                // This team LOST.
+                if (doesUserPickMatchThisTeam) {
+                    // User picked them to win -> Red X
+                    return { state: 'correct-loser', userPick, actualTeam, isWinner: false, score };
+                } else {
+                    // User did NOT pick them (picked the other team, who won).
+                    // User was correct about this team losing.
+                    // No Red X. Normal display.
+                    return { state: null, userPick, actualTeam, isWinner: false, score };
+                }
             }
         } else {
             // User picked wrong team - show strikethrough with actual team
@@ -136,6 +170,9 @@ function Matchup({
                             <span className={`actual-team ${info.isWinner ? 'winner' : ''}`}>
                                 {formatTeamName(info.actualTeam)}
                             </span>
+                        )}
+                        {showCorrectAnswers && info.score != null && (
+                            <span className="team-score">{info.score}</span>
                         )}
                     </div>
                 ) : (

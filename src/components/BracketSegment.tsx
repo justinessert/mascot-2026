@@ -85,6 +85,9 @@ function BracketSegment({
                                 ? getCorrectAnswer(roundIndex, matchupIndex)
                                 : null;
 
+                            // The winner of this matchup is stored in the next round at the same matchup index
+                            const userPickedWinner = bracket[roundIndex + 1]?.[matchupIndex];
+
                             return (
                                 <div key={matchupIndex} className="matchup-wrapper">
                                     <Matchup
@@ -97,6 +100,7 @@ function BracketSegment({
                                         topTeamScore={correctData?.winnerScore}
                                         bottomTeamScore={correctData?.loserScore}
                                         showCorrectAnswers={showCorrectAnswers}
+                                        userPickedWinner={userPickedWinner || null}
                                     />
                                 </div>
                             );

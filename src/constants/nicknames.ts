@@ -49,7 +49,7 @@ export function formatTeamName(teamKey: string): string {
     const abbreviations: Record<string, string> = abbreviationsData;
 
     return teamKey
-        .split('_')
+        .split(/[_-]/)
         .map(word => {
             const lower = word.toLowerCase();
             // Check if it's a known abbreviation

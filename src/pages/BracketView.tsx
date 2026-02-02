@@ -31,6 +31,7 @@ function BracketView(): React.ReactElement {
     const [loading, setLoading] = useState<boolean>(true);
     const [bracketName, setBracketName] = useState<string>('');
     const [userName, setUserName] = useState<string>('');
+    const [contributors, setContributors] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [correctBracket, setCorrectBracket] = useState<CorrectBracket | null>(null);
 
@@ -56,6 +57,7 @@ function BracketView(): React.ReactElement {
                 setRegions(bracket.regions);
                 setBracketName(bracket.name || 'Unnamed Bracket');
                 setUserName(bracket.userName || 'Anonymous');
+                setContributors(bracket.contributors || []);
             } else {
                 setError('Bracket not found');
             }
@@ -97,6 +99,7 @@ function BracketView(): React.ReactElement {
             regions={regions}
             bracketName={bracketName}
             userName={userName}
+            contributors={contributors}
             year={year || '2025'}
             backLink={backLink}
             backLinkText={backLinkText}

@@ -19,6 +19,7 @@ interface FullBracketDisplayProps {
     regions: Record<string, Region>;
     bracketName?: string;
     userName?: string;
+    contributors?: string[];
     year: string | number;
     onBack?: () => void;
     backLink?: string;
@@ -34,6 +35,7 @@ function FullBracketDisplay({
     regions,
     bracketName,
     userName,
+    contributors = [],
     year,
 
     backLink,
@@ -127,7 +129,14 @@ function FullBracketDisplay({
             {/* Header */}
             <div className="shared-bracket-header">
                 <h2>{bracketName ? `${bracketName} - ${year}` : `${year} Bracket`}</h2>
-                {userName && <p className="bracket-owner">by {userName}</p>}
+                {userName && (
+                    <p className="bracket-owner">
+                        by {contributors.length > 0
+                            ? `${userName} and ${contributors.join(' and ')}`
+                            : userName
+                        }
+                    </p>
+                )}
 
                 {backLink && (
                     <Link to={backLink} className="back-link">

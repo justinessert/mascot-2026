@@ -15,13 +15,14 @@ import { useTournament } from '../hooks/useTournament';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigationBlocker } from '../hooks/useNavigationBlocker';
 import { formatTeamName, formatMascotName } from '../constants/nicknames';
-import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket } from '../services/bracketService';
+import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket, addContributor } from '../services/bracketService';
 import ComingSoon from '../components/ComingSoon';
 import RegionProgress from '../components/RegionProgress';
 import ChampionView from '../components/ChampionView';
 import TeamCard from '../components/TeamCard';
 import SplitTeamCard from '../components/SplitTeamCard';
 import { ImageModal, useImageExpansion, RenderImageWithMagnifier } from '../components/ImageModal';
+import AddContributorModal from '../components/AddContributorModal';
 import type { Gender, GenderCode } from '../types/bracket';
 import type { RegionData, TeamData } from '../types/bracket';
 import './WinnerSelection.css';
@@ -51,6 +52,10 @@ function WinnerSelection(): React.ReactElement {
     const { expandedImage, expandImage, closeImage } = useImageExpansion(); // For magnifying glass popup
     const [isModified, setIsModified] = useState<boolean>(false); // Track if bracket changed since last save
     const [previousPicks, setPreviousPicks] = useState<PreviousPicksMap>({}); // To track picks before reset
+
+    // Contributor modal state
+    const [showAddContributorModal, setShowAddContributorModal] = useState<boolean>(false);
+    const [contributors, setContributors] = useState<string[]>([]);
 
     // Check if we're past the cutoff time (no more saves/publishes allowed)
     const isPastCutoff = (): boolean => {
@@ -514,6 +519,22 @@ function WinnerSelection(): React.ReactElement {
         }
     };
 
+    // Handle adding a contributor to the bracket
+    const handleAddContributor = async (username: string): Promise<{ success: boolean; error?: string }> => {
+        if (!user) {
+            return { success: false, error: 'You must be logged in to add contributors.' };
+        }
+
+        const result = await addContributor(user, username, selectedYear, genderPath);
+
+        if (result.success) {
+            // Update local contributors list
+            setContributors(prev => [...prev, username]);
+        }
+
+        return result;
+    };
+
     // Start editing picks again
     const handleEditPicks = (): void => {
         setChampion(null);
@@ -550,27 +571,37 @@ function WinnerSelection(): React.ReactElement {
     // Champion view - show when all picks are complete
     if (champion) {
         return (
-            <ChampionView
-                champion={champion}
-                bracketName={bracketName}
-                setBracketName={setBracketName}
-                isPastCutoff={isPastCutoff()}
-                saved={saved}
-                published={published}
-                isModified={isModified}
-                user={user}
-                hasOtherGenderBracket={hasOtherGenderBracket}
-                selectedGender={selectedGender}
-                onEditPicks={handleEditPicks}
-                onViewBracket={() => safeNavigate('/bracket/view/full')}
-                onLogin={() => safeNavigate('/login?redirect=/bracket/pick')}
-                onSignup={() => safeNavigate('/signup')}
-                onSave={handleSaveBracket}
-                onPublish={handlePublishBracket}
-                onCreateOtherGender={handleCreateOtherGender}
-                setSaved={setSaved}
-                setIsModified={setIsModified}
-            />
+            <>
+                <ChampionView
+                    champion={champion}
+                    bracketName={bracketName}
+                    setBracketName={setBracketName}
+                    isPastCutoff={isPastCutoff()}
+                    saved={saved}
+                    published={published}
+                    isModified={isModified}
+                    user={user}
+                    hasOtherGenderBracket={hasOtherGenderBracket}
+                    selectedGender={selectedGender}
+                    onEditPicks={handleEditPicks}
+                    onViewBracket={() => safeNavigate('/bracket/view/full')}
+                    onLogin={() => safeNavigate('/login?redirect=/bracket/pick')}
+                    onSignup={() => safeNavigate('/signup')}
+                    onSave={handleSaveBracket}
+                    onPublish={handlePublishBracket}
+                    onCreateOtherGender={handleCreateOtherGender}
+                    setSaved={setSaved}
+                    setIsModified={setIsModified}
+                    contributors={contributors}
+                    onOpenAddContributorModal={() => setShowAddContributorModal(true)}
+                />
+                <AddContributorModal
+                    isOpen={showAddContributorModal}
+                    onClose={() => setShowAddContributorModal(false)}
+                    onSubmit={handleAddContributor}
+                    existingContributors={contributors}
+                />
+            </>
         );
     }
 

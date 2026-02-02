@@ -30,6 +30,10 @@ interface ChampionViewProps {
     onCreateOtherGender: () => void;
     setSaved: (saved: boolean) => void;
     setIsModified: (modified: boolean) => void;
+    // Contributor-related props
+    isSecondaryOwner?: boolean;
+    contributors?: string[];
+    onOpenAddContributorModal?: () => void;
 }
 
 function ChampionView({
@@ -51,7 +55,10 @@ function ChampionView({
     onPublish,
     onCreateOtherGender,
     setSaved,
-    setIsModified
+    setIsModified,
+    isSecondaryOwner = false,
+    contributors = [],
+    onOpenAddContributorModal
 }: ChampionViewProps): React.ReactElement {
     return (
         <div className="winner-selection-container">
@@ -62,6 +69,13 @@ function ChampionView({
                 {isPastCutoff && (
                     <div className="cutoff-warning-banner">
                         ⚠️ The tournament has started. Brackets are now locked and cannot be saved or published.
+                    </div>
+                )}
+
+                {/* Secondary owner read-only banner */}
+                {isSecondaryOwner && (
+                    <div className="info-banner" style={{ marginBottom: '20px' }}>
+                        👁️ You are viewing a shared bracket. Only the primary owner can make changes.
                     </div>
                 )}
 
@@ -115,7 +129,7 @@ function ChampionView({
                             </>
                         )}
 
-                        {user && (
+                        {user && !isSecondaryOwner && (
                             <>
                                 <button
                                     onClick={onSave}
@@ -136,6 +150,26 @@ function ChampionView({
                             </>
                         )}
                     </div>
+
+                    {/* Add Contributor Button - only for primary owner */}
+                    {user && !isSecondaryOwner && (
+                        <div className="add-contributor-section" style={{ marginTop: '20px' }}>
+                            <button
+                                onClick={onOpenAddContributorModal}
+                                disabled={!published}
+                                className="secondary-btn"
+                                style={{ width: '100%' }}
+                                title={!published ? 'Publish your bracket first to add contributors' : ''}
+                            >
+                                {!published ? '🔒 Add Another Contributor (Publish First)' : '👥 Add Another Contributor'}
+                            </button>
+                            {contributors.length > 0 && (
+                                <p style={{ marginTop: '10px', fontSize: '0.9rem', color: 'var(--secondary-text)' }}>
+                                    Current contributors: {contributors.join(', ')}
+                                </p>
+                            )}
+                        </div>
+                    )}
 
                     {/* Cross-Gender Promotion */}
                     {user && !hasOtherGenderBracket && (

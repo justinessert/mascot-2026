@@ -9,6 +9,12 @@ import {
     doc,
     setDoc,
     getDoc,
+    getDocs,
+    collection,
+    query,
+    where,
+    updateDoc,
+    arrayUnion,
     DocumentReference,
     DocumentData,
 } from 'firebase/firestore';
@@ -346,6 +352,7 @@ export async function saveBracket(
         name: name,
         user: user.displayName,
         published: published,
+        ownerUid: user.uid,
     });
 }
 
@@ -382,6 +389,9 @@ interface LoadedBracketByUserId {
     regions: Record<string, Region>;
     name: string;
     userName: string;
+    contributors?: string[];
+    contributorUids?: string[];
+    ownerUid?: string;
 }
 
 /**
@@ -397,6 +407,9 @@ export async function loadBracketByUserId(userId: string, year: number, gender: 
             regions: loadRegions(data.bracket, year),
             name: data.name,
             userName: data.user,
+            contributors: data.contributors || [],
+            contributorUids: data.contributorUids || [],
+            ownerUid: data.ownerUid || userId,
         };
     }
 
@@ -429,6 +442,9 @@ export async function publishBracket(
         userName: user.displayName || 'Anonymous',
         timestamp: new Date(),
         champion: champion ? champion.toDict() : null,
+        ownerUid: user.uid,
+        contributors: [],
+        contributorUids: [],
     };
 
     if (isUpdate) {
@@ -456,6 +472,7 @@ export interface BracketHistoryEntry {
 
 /**
  * Get user's bracket history across all years
+ * Includes own brackets and shared brackets where user is a contributor
  */
 export async function getUserBracketHistory(user: User | null, gender: Gender = 'men'): Promise<BracketHistoryEntry[]> {
     if (!user) return [];
@@ -465,7 +482,7 @@ export async function getUserBracketHistory(user: User | null, gender: Gender = 
     const history: BracketHistoryEntry[] = [];
 
     for (const year of years) {
-        // 1. Try to load saved bracket
+        // 1. Try to load user's own saved bracket
         const savedBracket = await loadBracket(user, +year, gender);
 
         if (savedBracket) {
@@ -500,7 +517,191 @@ export async function getUserBracketHistory(user: User | null, gender: Gender = 
                 timestamp: undefined // Could add if we stored it
             });
         }
+
+        // 3. Also load shared brackets where user is a contributor
+        const sharedBrackets = await getSharedBrackets(user, +year, gender);
+
+        for (const shared of sharedBrackets) {
+            // Fetch score from the shared bracket's leaderboard entry
+            let sharedScore: number = 0;
+            try {
+                const leaderboardRef: DocumentReference = doc(db, `leaderboard/${gender}/years/${year}/entries/${shared.ownerUid}`);
+                const entryDoc = await getDoc(leaderboardRef);
+                if (entryDoc.exists()) {
+                    sharedScore = entryDoc.data().score || 0;
+                }
+            } catch (err) {
+                console.error(`Error fetching shared bracket score for ${year}:`, err);
+            }
+
+            history.push({
+                year: parseInt(year),
+                bracketId: shared.ownerUid, // Use owner's UID for navigation
+                bracketName: `${shared.bracketName} (shared with ${shared.ownerName})`,
+                published: true, // Shared brackets are always published
+                score: sharedScore,
+                champion: null, // Could load if needed
+                timestamp: undefined
+            });
+        }
     }
 
     return history;
+}
+
+/**
+ * User lookup result
+ */
+export interface UserLookupResult {
+    uid: string;
+    displayName: string;
+}
+
+/**
+ * Look up a user by their display name in the users collection
+ * Returns null if user not found
+ */
+export async function lookupUserByDisplayName(displayName: string): Promise<UserLookupResult | null> {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('displayName', '==', displayName));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+        return null;
+    }
+
+    const userDoc = snapshot.docs[0];
+    return {
+        uid: userDoc.id,
+        displayName: userDoc.data().displayName
+    };
+}
+
+/**
+ * Add contributor result
+ */
+export interface AddContributorResult {
+    success: boolean;
+    error?: string;
+}
+
+/**
+ * Add a contributor to a published bracket
+ * Validates:
+ * - Contributor exists
+ * - Contributor is not already an owner/contributor
+ * - Contributor hasn't published their own bracket for this tournament
+ */
+export async function addContributor(
+    ownerUser: User,
+    contributorDisplayName: string,
+    year: number,
+    gender: Gender = 'men'
+): Promise<AddContributorResult> {
+    // 1. Look up the contributor by display name
+    const contributor = await lookupUserByDisplayName(contributorDisplayName);
+    if (!contributor) {
+        return { success: false, error: 'User not found. Please check the username and try again.' };
+    }
+
+    // 2. Check if contributor is the same as owner
+    if (contributor.uid === ownerUser.uid) {
+        return { success: false, error: 'You cannot add yourself as a contributor.' };
+    }
+
+    // 3. Load the bracket to check existing contributors
+    const bracketRef: DocumentReference = doc(db, `brackets/${gender}/years/${year}/users/${ownerUser.uid}`);
+    const bracketSnapshot = await getDoc(bracketRef);
+
+    if (!bracketSnapshot.exists()) {
+        return { success: false, error: 'Bracket not found.' };
+    }
+
+    const bracketData = bracketSnapshot.data();
+    const existingContributorUids = bracketData.contributorUids || [];
+
+    // 4. Check if contributor is already added
+    if (existingContributorUids.includes(contributor.uid)) {
+        return { success: false, error: `${contributorDisplayName} is already a contributor to this bracket.` };
+    }
+
+    // 5. Check if contributor has already published their own bracket for this tournament
+    const contributorLeaderboardRef: DocumentReference = doc(db, `leaderboard/${gender}/years/${year}/entries/${contributor.uid}`);
+    const contributorLeaderboardSnapshot = await getDoc(contributorLeaderboardRef);
+
+    if (contributorLeaderboardSnapshot.exists()) {
+        return { success: false, error: `${contributorDisplayName} has already published their own bracket for this tournament.` };
+    }
+
+    // 6. Add contributor to bracket document
+    await updateDoc(bracketRef, {
+        contributors: arrayUnion(contributorDisplayName),
+        contributorUids: arrayUnion(contributor.uid)
+    });
+
+    // 7. Add contributor to leaderboard entry
+    const leaderboardRef: DocumentReference = doc(db, `leaderboard/${gender}/years/${year}/entries/${ownerUser.uid}`);
+    await updateDoc(leaderboardRef, {
+        contributors: arrayUnion(contributorDisplayName),
+        contributorUids: arrayUnion(contributor.uid)
+    });
+
+    return { success: true };
+}
+
+/**
+ * Check if the current user is a secondary owner (contributor) of a bracket
+ * Returns true if user is in contributorUids but is not the primary owner
+ */
+export async function isSecondaryOwner(
+    user: User | null,
+    bracketOwnerUid: string,
+    year: number,
+    gender: Gender = 'men'
+): Promise<boolean> {
+    if (!user) return false;
+
+    // If user is the primary owner, they're not a secondary owner
+    if (user.uid === bracketOwnerUid) return false;
+
+    // Load the bracket to check contributorUids
+    const bracketRef: DocumentReference = doc(db, `brackets/${gender}/years/${year}/users/${bracketOwnerUid}`);
+    const snapshot = await getDoc(bracketRef);
+
+    if (!snapshot.exists()) return false;
+
+    const data = snapshot.data();
+    const contributorUids = data.contributorUids || [];
+
+    return contributorUids.includes(user.uid);
+}
+
+/**
+ * Get brackets where user is a contributor (not the primary owner)
+ * Used to populate user history with shared brackets
+ */
+export async function getSharedBrackets(
+    user: User | null,
+    year: number,
+    gender: Gender = 'men'
+): Promise<{ ownerUid: string; bracketName: string; ownerName: string }[]> {
+    if (!user) return [];
+
+    // Query leaderboard entries where user is in contributorUids
+    const leaderboardRef = collection(db, `leaderboard/${gender}/years/${year}/entries`);
+    const q = query(leaderboardRef, where('contributorUids', 'array-contains', user.uid));
+    const snapshot = await getDocs(q);
+
+    const sharedBrackets: { ownerUid: string; bracketName: string; ownerName: string }[] = [];
+
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        sharedBrackets.push({
+            ownerUid: doc.id,
+            bracketName: data.bracketName,
+            ownerName: data.userName
+        });
+    });
+
+    return sharedBrackets;
 }

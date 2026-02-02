@@ -35,6 +35,7 @@ interface LeaderboardBracket {
     bracketId: string;
     bracketName: string;
     userName: string;
+    contributors?: string[];
     score: number;
     maxScore: number | null;
     champion: Team | null;
@@ -153,6 +154,7 @@ function Leaderboard(): React.ReactElement {
                     bracketId: entry.bracketId,
                     bracketName: entry.bracketName,
                     userName: entry.userName,
+                    contributors: (entry as { contributors?: string[] }).contributors || [],
                     score: entry.score,
                     maxScore: entry.maxScore,
                     champion: entry.champion ? Team.fromDict(entry.champion as { name: string; seed: number }, selectedYear) : null,
@@ -170,6 +172,7 @@ function Leaderboard(): React.ReactElement {
                         bracketId: data.bracketId || '',
                         bracketName: data.bracketName || 'Unknown',
                         userName: data.userName || 'Anonymous',
+                        contributors: data.contributors || [],
                         score: data.score ?? 0,
                         maxScore: data.maxScore ?? null,
                         champion: data.champion ? Team.fromDict(data.champion, selectedYear) : null,
@@ -448,7 +451,12 @@ function Leaderboard(): React.ReactElement {
                                             )}
                                         </td>
                                         <td>{bracket.bracketName}</td>
-                                        <td>{bracket.userName}</td>
+                                        <td>
+                                            {bracket.contributors && bracket.contributors.length > 0
+                                                ? `${bracket.userName} & ${bracket.contributors.join(' & ')}`
+                                                : bracket.userName
+                                            }
+                                        </td>
                                         <td className="score-cell">{bracket.score}</td>
                                         {isPastCutoff() && <td>{bracket.maxScore ?? '-'}</td>}
                                     </tr>

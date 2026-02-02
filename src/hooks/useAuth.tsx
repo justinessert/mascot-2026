@@ -64,6 +64,21 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactElemen
         if (displayName) {
             await updateProfile(result.user, { displayName });
         }
+
+        // Create user document in Firestore for user lookup
+        try {
+            const { doc, setDoc } = await import('firebase/firestore');
+            const { db } = await import('../services/firebase');
+            await setDoc(doc(db, 'users', result.user.uid), {
+                displayName: displayName || '',
+                email: email,
+                createdAt: new Date()
+            });
+        } catch (error) {
+            console.error('Error creating user document:', error);
+            // Don't fail signup if user document creation fails
+        }
+
         return result;
     };
 

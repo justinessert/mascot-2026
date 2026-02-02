@@ -55,6 +55,12 @@ export interface SavedBracket {
     name: string;
     user: string;
     published: boolean;
+    /** UID of the primary owner */
+    ownerUid?: string;
+    /** Display names of additional contributors */
+    contributors?: string[];
+    /** UIDs of additional contributors (for permission checking) */
+    contributorUids?: string[];
 }
 
 /**

@@ -15,6 +15,7 @@ import {
     where,
     updateDoc,
     arrayUnion,
+    arrayRemove,
     DocumentReference,
     DocumentData,
 } from 'firebase/firestore';
@@ -706,4 +707,59 @@ export async function getSharedBrackets(
     });
 
     return sharedBrackets;
+}
+
+/**
+ * Leave a bracket that the user is a contributor on
+ * Removes the user from contributors and contributorUids arrays
+ */
+export async function leaveBracket(
+    user: User,
+    ownerUid: string,
+    year: number,
+    gender: Gender = 'men'
+): Promise<{ success: boolean; error?: string }> {
+    if (!user) {
+        return { success: false, error: 'You must be logged in to leave a bracket.' };
+    }
+
+    // Can't leave your own bracket
+    if (user.uid === ownerUid) {
+        return { success: false, error: 'You cannot leave your own bracket.' };
+    }
+
+    try {
+        // 1. Load the bracket to get current contributors and verify user is a contributor
+        const bracketRef: DocumentReference = doc(db, `brackets/${gender}/years/${year}/users/${ownerUid}`);
+        const bracketSnapshot = await getDoc(bracketRef);
+
+        if (!bracketSnapshot.exists()) {
+            return { success: false, error: 'Bracket not found.' };
+        }
+
+        const bracketData = bracketSnapshot.data();
+        const contributorUids = bracketData.contributorUids || [];
+
+        if (!contributorUids.includes(user.uid)) {
+            return { success: false, error: 'You are not a contributor to this bracket.' };
+        }
+
+        // 2. Remove from bracket document
+        await updateDoc(bracketRef, {
+            contributors: arrayRemove(user.displayName),
+            contributorUids: arrayRemove(user.uid)
+        });
+
+        // 3. Remove from leaderboard entry
+        const leaderboardRef: DocumentReference = doc(db, `leaderboard/${gender}/years/${year}/entries/${ownerUid}`);
+        await updateDoc(leaderboardRef, {
+            contributors: arrayRemove(user.displayName),
+            contributorUids: arrayRemove(user.uid)
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error leaving bracket:', error);
+        return { success: false, error: 'Failed to leave bracket. Please try again.' };
+    }
 }

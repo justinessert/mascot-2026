@@ -7,10 +7,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
-import { loadBracketByUserId, Region } from '../services/bracketService';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { loadBracketByUserId, leaveBracket, Region } from '../services/bracketService';
 import { loadCorrectBracket, CorrectBracket } from '../services/correctBracketService';
 import { mensTournaments, womensTournaments } from '../constants/bracketData';
+import { useAuth } from '../hooks/useAuth';
 import FullBracketDisplay from '../components/FullBracketDisplay';
 import type { Gender } from '../types/bracket';
 import './FullBracket.css'; // Reuse FullBracket styles
@@ -22,6 +23,8 @@ interface LocationState {
 function BracketView(): React.ReactElement {
     const { year, uuid, gender } = useParams<{ year: string; uuid: string; gender: string }>();
     const location = useLocation();
+    const navigate = useNavigate();
+    const { user } = useAuth();
     const numericYear = parseInt(year || '2025', 10);
 
     // Convert gender from URL (default to 'men' if not provided)
@@ -32,6 +35,7 @@ function BracketView(): React.ReactElement {
     const [bracketName, setBracketName] = useState<string>('');
     const [userName, setUserName] = useState<string>('');
     const [contributors, setContributors] = useState<string[]>([]);
+    const [contributorUids, setContributorUids] = useState<string[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [correctBracket, setCorrectBracket] = useState<CorrectBracket | null>(null);
 
@@ -40,6 +44,9 @@ function BracketView(): React.ReactElement {
     const fromProfile = locationState?.from === 'profile';
     const backLink = fromProfile ? '/profile' : '/leaderboard';
     const backLinkText = fromProfile ? 'Back to Profile' : 'Back to Leaderboard';
+
+    // Check if current user is a contributor to this bracket
+    const isContributor = user && uuid && contributorUids.includes(user.uid);
 
     // Load the shared bracket and correct bracket on mount
     useEffect(() => {
@@ -58,6 +65,7 @@ function BracketView(): React.ReactElement {
                 setBracketName(bracket.name || 'Unnamed Bracket');
                 setUserName(bracket.userName || 'Anonymous');
                 setContributors(bracket.contributors || []);
+                setContributorUids(bracket.contributorUids || []);
             } else {
                 setError('Bracket not found');
             }
@@ -67,6 +75,26 @@ function BracketView(): React.ReactElement {
         }
 
         setLoading(false);
+    };
+
+    // Handle leaving this bracket
+    const handleLeaveBracket = async (): Promise<void> => {
+        if (!user || !uuid) return;
+
+        const confirmed = window.confirm(
+            'Are you sure you want to leave this bracket? You will no longer be listed as a contributor.'
+        );
+
+        if (!confirmed) return;
+
+        const result = await leaveBracket(user, uuid, numericYear, genderPath);
+
+        if (result.success) {
+            alert('You have left this bracket.');
+            navigate('/leaderboard');
+        } else {
+            alert(result.error || 'Failed to leave bracket. Please try again.');
+        }
     };
 
     if (loading) {
@@ -106,9 +134,10 @@ function BracketView(): React.ReactElement {
             regionOrder={currentRegionOrder}
             correctBracket={correctBracket}
             showCorrectAnswers={true}
+            isContributor={isContributor || false}
+            onLeaveBracket={handleLeaveBracket}
         />
     );
 }
 
 export default BracketView;
-

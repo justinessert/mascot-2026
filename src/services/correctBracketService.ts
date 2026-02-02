@@ -45,22 +45,6 @@ export async function loadCorrectBracket(
 
         if (snapshot.exists()) {
             const data = snapshot.data();
-            console.log('=== CORRECT BRACKET DATA ===');
-            console.log('Year:', year, 'Gender:', gender);
-            console.log('Full data:', JSON.stringify(data, null, 2));
-
-            // Log each region's round_1 games for debugging
-            if (data.regions) {
-                for (const [regionName, regionData] of Object.entries(data.regions)) {
-                    console.log(`\n--- ${regionName.toUpperCase()} Region ---`);
-                    const typedRegionData = regionData as Record<string, any[]>;
-                    if (typedRegionData.round_1) {
-                        typedRegionData.round_1.forEach((game: any, idx: number) => {
-                            console.log(`  Game ${idx}: winner="${game.winner}", gameId="${game.gameId}"`);
-                        });
-                    }
-                }
-            }
 
             return {
                 regions: data.regions || {},

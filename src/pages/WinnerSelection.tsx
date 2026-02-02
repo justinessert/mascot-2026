@@ -15,7 +15,7 @@ import { useTournament } from '../hooks/useTournament';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigationBlocker } from '../hooks/useNavigationBlocker';
 import { formatTeamName, formatMascotName } from '../constants/nicknames';
-import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket, addContributor } from '../services/bracketService';
+import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket, addContributor, getSharedBrackets, loadBracketByUserId, leaveBracket } from '../services/bracketService';
 import ComingSoon from '../components/ComingSoon';
 import RegionProgress from '../components/RegionProgress';
 import ChampionView from '../components/ChampionView';
@@ -56,6 +56,10 @@ function WinnerSelection(): React.ReactElement {
     // Contributor modal state
     const [showAddContributorModal, setShowAddContributorModal] = useState<boolean>(false);
     const [contributors, setContributors] = useState<string[]>([]);
+
+    // Secondary owner state - when user is viewing a shared bracket they contribute to
+    const [isSecondaryOwner, setIsSecondaryOwner] = useState<boolean>(false);
+    const [ownerUid, setOwnerUid] = useState<string | null>(null);
 
     // Check if we're past the cutoff time (no more saves/publishes allowed)
     const isPastCutoff = (): boolean => {
@@ -177,6 +181,10 @@ function WinnerSelection(): React.ReactElement {
     useEffect(() => {
         isInitializing.current = false; // Reset when year/gender changes
         initializeOrLoadBracket();
+        // Also check for shared brackets when year/gender changes and user is logged in
+        if (user) {
+            checkFirebaseBracket();
+        }
     }, [selectedYear, selectedGender]);
 
     // Handle user login - check if Firebase has saved bracket
@@ -189,6 +197,29 @@ function WinnerSelection(): React.ReactElement {
     // Check Firebase for saved bracket when user logs in
     const checkFirebaseBracket = async (): Promise<void> => {
         try {
+            // First, check if user is a secondary contributor to another bracket
+            const sharedBrackets = await getSharedBrackets(user, selectedYear, genderPath);
+
+            if (sharedBrackets.length > 0) {
+                // User is a secondary contributor - load the shared bracket
+                const sharedBracket = sharedBrackets[0]; // Take the first shared bracket
+                const fullBracket = await loadBracketByUserId(sharedBracket.ownerUid, selectedYear, genderPath);
+                if (fullBracket) {
+                    applyLoadedBracket({
+                        ...fullBracket,
+                        ownerUid: sharedBracket.ownerUid
+                    });
+                    setIsSecondaryOwner(true);
+                    setOwnerUid(sharedBracket.ownerUid);
+                    saveTemporaryBracket(selectedYear, null, genderPath); // Clear memory
+                    return;
+                }
+            }
+
+            // Not a secondary contributor, check for user's own bracket
+            setIsSecondaryOwner(false);
+            setOwnerUid(null);
+
             const savedBracket = await loadBracket(user, selectedYear, genderPath);
             if (savedBracket) {
                 // Firebase has saved bracket - use it and override memory
@@ -207,6 +238,8 @@ function WinnerSelection(): React.ReactElement {
         bracketName?: string;
         published?: boolean;
         contributors?: string[];
+        contributorUids?: string[];
+        ownerUid?: string;
     }
 
     // Apply a loaded bracket (from Firebase or memory) to state
@@ -537,6 +570,30 @@ function WinnerSelection(): React.ReactElement {
         return result;
     };
 
+    // Handle leaving a shared bracket (for secondary contributors)
+    const handleLeaveBracket = async (): Promise<void> => {
+        if (!user || !ownerUid) return;
+
+        const confirmed = window.confirm(
+            'Are you sure you want to leave this bracket? You will no longer be listed as a contributor and will need to create your own bracket.'
+        );
+
+        if (!confirmed) return;
+
+        const result = await leaveBracket(user, ownerUid, selectedYear, genderPath);
+
+        if (result.success) {
+            alert('You have left this bracket. You can now create your own bracket.');
+            setIsSecondaryOwner(false);
+            setOwnerUid(null);
+            setContributors([]);
+            // Re-initialize to start fresh
+            initializeOrLoadBracket();
+        } else {
+            alert(result.error || 'Failed to leave bracket. Please try again.');
+        }
+    };
+
     // Start editing picks again
     const handleEditPicks = (): void => {
         setChampion(null);
@@ -596,6 +653,8 @@ function WinnerSelection(): React.ReactElement {
                     setIsModified={setIsModified}
                     contributors={contributors}
                     onOpenAddContributorModal={() => setShowAddContributorModal(true)}
+                    isSecondaryOwner={isSecondaryOwner}
+                    onLeaveBracket={handleLeaveBracket}
                 />
                 <AddContributorModal
                     isOpen={showAddContributorModal}

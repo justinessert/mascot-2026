@@ -29,6 +29,9 @@ interface FullBracketDisplayProps {
     // Props for correct answer display
     correctBracket?: CorrectBracket | null;
     showCorrectAnswers?: boolean;
+    // Props for contributor leaving
+    isContributor?: boolean;
+    onLeaveBracket?: () => void;
 }
 
 function FullBracketDisplay({
@@ -43,7 +46,9 @@ function FullBracketDisplay({
     regionOrder: providedRegionOrder,
     children,
     correctBracket,
-    showCorrectAnswers = false
+    showCorrectAnswers = false,
+    isContributor = false,
+    onLeaveBracket
 }: FullBracketDisplayProps): React.ReactElement {
     const numericYear = parseInt(String(year), 10);
 
@@ -142,6 +147,26 @@ function FullBracketDisplay({
                     <Link to={backLink} className="back-link">
                         ← {backLinkText || 'Back'}
                     </Link>
+                )}
+
+                {/* Leave Bracket button for contributors */}
+                {isContributor && onLeaveBracket && (
+                    <button
+                        className="leave-bracket-btn"
+                        onClick={onLeaveBracket}
+                        style={{
+                            marginTop: '10px',
+                            padding: '8px 16px',
+                            background: 'var(--danger, #dc3545)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem'
+                        }}
+                    >
+                        Leave Bracket
+                    </button>
                 )}
             </div>
 

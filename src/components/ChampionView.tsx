@@ -34,6 +34,7 @@ interface ChampionViewProps {
     isSecondaryOwner?: boolean;
     contributors?: string[];
     onOpenAddContributorModal?: () => void;
+    onLeaveBracket?: () => void;
 }
 
 function ChampionView({
@@ -58,7 +59,8 @@ function ChampionView({
     setIsModified,
     isSecondaryOwner = false,
     contributors = [],
-    onOpenAddContributorModal
+    onOpenAddContributorModal,
+    onLeaveBracket
 }: ChampionViewProps): React.ReactElement {
     return (
         <div className="winner-selection-container">
@@ -76,6 +78,22 @@ function ChampionView({
                 {isSecondaryOwner && (
                     <div className="info-banner" style={{ marginBottom: '20px' }}>
                         👁️ You are viewing a shared bracket. Only the primary owner can make changes.
+                        <button
+                            className="leave-bracket-btn"
+                            onClick={onLeaveBracket}
+                            style={{
+                                marginLeft: '15px',
+                                padding: '5px 12px',
+                                fontSize: '0.85rem',
+                                background: 'var(--danger, #dc3545)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Leave Bracket
+                        </button>
                     </div>
                 )}
 

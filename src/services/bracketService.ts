@@ -360,6 +360,7 @@ interface LoadedBracket {
     regions: Record<string, Region>;
     name: string;
     published: boolean;
+    contributors?: string[];
 }
 
 /**
@@ -379,6 +380,7 @@ export async function loadBracket(user: User | null, year: number, gender: Gende
             regions: loadRegions(data.bracket, year),
             name: data.name,
             published: data.published,
+            contributors: data.contributors || [],
         };
     }
 

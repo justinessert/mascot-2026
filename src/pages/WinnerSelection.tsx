@@ -206,6 +206,7 @@ function WinnerSelection(): React.ReactElement {
         name?: string;
         bracketName?: string;
         published?: boolean;
+        contributors?: string[];
     }
 
     // Apply a loaded bracket (from Firebase or memory) to state
@@ -216,6 +217,7 @@ function WinnerSelection(): React.ReactElement {
         setSaved(!!savedBracket.name);
         setPublished(savedBracket.published || false);
         setIsModified(false);
+        setContributors(savedBracket.contributors || []);
 
         // Check if we have a champion
         const finalFour = savedBracket.regions.final_four;

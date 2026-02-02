@@ -55,6 +55,7 @@ describe('Matchup Component', () => {
                     correctTeam1="teama"
                     correctTeam2="teamb"
                     showCorrectAnswers={true}
+                    userPickedWinner={mockTeamA as any}
                 />
             );
 
@@ -71,6 +72,7 @@ describe('Matchup Component', () => {
                     correctTeam1="teama"
                     correctTeam2="teamb"
                     showCorrectAnswers={true}
+                    userPickedWinner={mockTeamA as any}
                 />
             );
 
@@ -90,9 +92,32 @@ describe('Matchup Component', () => {
                 />
             );
 
-            // Should show user's wrong pick with strikethrough
+            // Should show user's wrong pick (displayed with strikethrough via CSS, no X icon)
             expect(screen.getByText('Formatted teamb')).toBeInTheDocument();
-            expect(screen.getByLabelText('Wrong pick')).toBeInTheDocument();
+            // Should NOT show "Wrong pick" X icon anymore
+            expect(screen.queryByLabelText('Wrong pick')).not.toBeInTheDocument();
+            // Should show actual team
+            expect(screen.getByText('Formatted teamc')).toBeInTheDocument();
+        });
+
+        it('shows red X when user picked a ghost team to win (team not in matchup)', () => {
+            render(
+                <Matchup
+                    topTeam={mockTeamA as any}
+                    bottomTeam={mockTeamB as any}
+                    correctWinner="teamc"
+                    correctLoser="teama"
+                    correctTeam1="teama"
+                    correctTeam2="teamc"  // User had teamb but actual was teamc
+                    showCorrectAnswers={true}
+                    userPickedWinner={mockTeamB as any}  // User picked the ghost team to win
+                />
+            );
+
+            // Should show user's wrong pick with strikethrough AND red X
+            expect(screen.getByText('Formatted teamb')).toBeInTheDocument();
+            // Should show red X because user explicitly picked this ghost team to win
+            expect(screen.getByLabelText('Lost')).toBeInTheDocument();
             // Should show actual team
             expect(screen.getByText('Formatted teamc')).toBeInTheDocument();
         });

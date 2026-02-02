@@ -74,6 +74,39 @@ function FullBracketDisplay({
         return regions.final_four?.getChampion?.() || null;
     };
 
+    // Get correct answer for Final Four matchups
+    // round: 1 for semifinals, 2 for championship
+    // matchupIndex: 0 or 1 for semifinals, 0 for championship
+    const getFinalFourCorrectAnswer = (round: number, matchupIndex: number) => {
+        if (!correctBracket || !showCorrectAnswers) return null;
+
+        const finalFourData = correctBracket.regions.final_four;
+        if (!finalFourData) return null;
+
+        const roundKey = `round_${round}`;
+        if (!finalFourData[roundKey]) return null;
+
+        const game = finalFourData[roundKey][matchupIndex];
+        return game || null;
+    };
+
+    // Get the user's picked winner for Final Four matchups
+    // For semifinals: winner goes to championship round (bracket[1])
+    // For championship: winner goes to champion slot (bracket[2])
+    const getFinalFourUserPickedWinner = (round: number, matchupIndex: number): Team | null => {
+        const finalFour = regions.final_four;
+        if (!finalFour || !finalFour.bracket) return null;
+
+        if (round === 1) {
+            // Semifinals: winner is in bracket[1] at matchupIndex position
+            return finalFour.bracket[1]?.[matchupIndex] || null;
+        } else if (round === 2) {
+            // Championship: winner is in bracket[2] at index 0 (the champion)
+            return finalFour.bracket[2]?.[0] || null;
+        }
+        return null;
+    };
+
     // Get left and right regions based on year's order
     // Use provided order if available, otherwise fallback to men's default
     const fallbackConfig = mensTournaments[numericYear] || mensTournaments[2025];
@@ -83,6 +116,11 @@ function FullBracketDisplay({
 
     const champion = getChampion();
     const finalFourMatchups = getFinalFourMatchups();
+
+    // Get correct answers for Final Four
+    const semiFinal1Correct = getFinalFourCorrectAnswer(1, 0);
+    const semiFinal2Correct = getFinalFourCorrectAnswer(1, 1);
+    const championshipCorrect = getFinalFourCorrectAnswer(2, 0);
 
     return (
         <div className="full-bracket-container">
@@ -140,6 +178,14 @@ function FullBracketDisplay({
                                 <Matchup
                                     topTeam={finalFourMatchups[0][0]}
                                     bottomTeam={finalFourMatchups[0][1]}
+                                    correctWinner={semiFinal1Correct?.winner}
+                                    correctLoser={semiFinal1Correct?.loser}
+                                    correctTeam1={semiFinal1Correct?.team1}
+                                    correctTeam2={semiFinal1Correct?.team2}
+                                    topTeamScore={semiFinal1Correct?.winnerScore}
+                                    bottomTeamScore={semiFinal1Correct?.loserScore}
+                                    showCorrectAnswers={showCorrectAnswers}
+                                    userPickedWinner={getFinalFourUserPickedWinner(1, 0)}
                                 />
                             </div>
                             <div className="final-four-matchup">
@@ -147,6 +193,14 @@ function FullBracketDisplay({
                                 <Matchup
                                     topTeam={finalFourMatchups[1][0]}
                                     bottomTeam={finalFourMatchups[1][1]}
+                                    correctWinner={championshipCorrect?.winner}
+                                    correctLoser={championshipCorrect?.loser}
+                                    correctTeam1={championshipCorrect?.team1}
+                                    correctTeam2={championshipCorrect?.team2}
+                                    topTeamScore={championshipCorrect?.winnerScore}
+                                    bottomTeamScore={championshipCorrect?.loserScore}
+                                    showCorrectAnswers={showCorrectAnswers}
+                                    userPickedWinner={getFinalFourUserPickedWinner(2, 0)}
                                 />
                             </div>
                             <div className="final-four-matchup">
@@ -154,6 +208,14 @@ function FullBracketDisplay({
                                 <Matchup
                                     topTeam={finalFourMatchups[2][0]}
                                     bottomTeam={finalFourMatchups[2][1]}
+                                    correctWinner={semiFinal2Correct?.winner}
+                                    correctLoser={semiFinal2Correct?.loser}
+                                    correctTeam1={semiFinal2Correct?.team1}
+                                    correctTeam2={semiFinal2Correct?.team2}
+                                    topTeamScore={semiFinal2Correct?.winnerScore}
+                                    bottomTeamScore={semiFinal2Correct?.loserScore}
+                                    showCorrectAnswers={showCorrectAnswers}
+                                    userPickedWinner={getFinalFourUserPickedWinner(1, 1)}
                                 />
                             </div>
                         </div>

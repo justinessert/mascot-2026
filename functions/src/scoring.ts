@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import { transformTeamName } from "./utils";
+import { transformTeamName, reverseTransformTeamName } from "./utils";
 import { roundOrders } from "./constants";
 import { db } from "./firebase";
 
@@ -133,10 +133,10 @@ function buildCorrectBracket(
                 const loser = game.winner === game.homeTeam ? game.awayTeam : game.homeTeam;
 
                 correctBracket.regions[region][roundKey][gameIdx] = {
-                    winner: game.winner || "",
-                    loser: loser || "",
-                    team1: game.homeTeam || "",  // Home team in slot 0
-                    team2: game.awayTeam || "",  // Away team in slot 1
+                    winner: reverseTransformTeamName(game.winner) || "",
+                    loser: reverseTransformTeamName(loser) || "",
+                    team1: reverseTransformTeamName(game.homeTeam) || "",  // Home team in slot 0
+                    team2: reverseTransformTeamName(game.awayTeam) || "",  // Away team in slot 1
                     winnerScore: game.winner === game.homeTeam ? homeScore : awayScore,
                     loserScore: game.winner === game.homeTeam ? awayScore : homeScore,
                     gameId: gameId

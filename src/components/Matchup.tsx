@@ -8,6 +8,7 @@
  * - Green checkmark ✓ + bold for correct picks that won
  * - Red X + strikethrough for incorrect picks
  * - Wrong opponent: strikethrough user's pick + show actual team below
+ *   - If user picked the wrong team to WIN, also shows red X before strikethrough
  * - Winner is always bolded
  */
 
@@ -46,6 +47,7 @@ interface TeamDisplayInfo {
     actualTeam: string | null;   // What team is actually in this slot
     isWinner: boolean;           // Is this the winning team?
     score: number | null;        // Score if applicable
+    pickedToWin: boolean;        // Did user pick this (wrong) team as the winner?
 }
 
 function Matchup({
@@ -80,12 +82,12 @@ function Matchup({
 
         // Not showing correct answers - no special state
         if (!showCorrectAnswers || !correctWinner) {
-            return { state: null, userPick, actualTeam: null, isWinner: false, score: null };
+            return { state: null, userPick, actualTeam: null, isWinner: false, score: null, pickedToWin: false };
         }
 
         // Game not yet played (winner is empty string)
         if (correctWinner === '') {
-            return { state: 'pending', userPick, actualTeam, isWinner: false, score: null };
+            return { state: 'pending', userPick, actualTeam, isWinner: false, score: null, pickedToWin: false };
         }
 
         // Determine if the actual team in this slot is the winner
@@ -113,34 +115,64 @@ function Matchup({
                 // This team WON.
                 if (doesUserPickMatchThisTeam) {
                     // User picked them to win -> Green Check
-                    return { state: 'correct-winner', userPick, actualTeam, isWinner: true, score };
+                    return { state: 'correct-winner', userPick, actualTeam, isWinner: true, score, pickedToWin: true };
                 } else {
                     // User did NOT pick them (picked the other team).
                     // This team won, but user was wrong.
                     // Should be BOLD (because winner) but NO Green Check.
                     // Returning null state removes any icon but keeps winner bolding (via isWinner)
-                    return { state: null, userPick, actualTeam, isWinner: true, score };
+                    return { state: null, userPick, actualTeam, isWinner: true, score, pickedToWin: false };
                 }
             } else {
                 // This team LOST.
                 if (doesUserPickMatchThisTeam) {
                     // User picked them to win -> Red X
-                    return { state: 'correct-loser', userPick, actualTeam, isWinner: false, score };
+                    return { state: 'correct-loser', userPick, actualTeam, isWinner: false, score, pickedToWin: true };
                 } else {
                     // User did NOT pick them (picked the other team, who won).
                     // User was correct about this team losing.
                     // No Red X. Normal display.
-                    return { state: null, userPick, actualTeam, isWinner: false, score };
+                    return { state: null, userPick, actualTeam, isWinner: false, score, pickedToWin: false };
                 }
             }
         } else {
             // User picked wrong team - show strikethrough with actual team
-            return { state: 'wrong-team', userPick, actualTeam, isWinner, score };
+            // Check if the user picked this wrong team as the winner of the matchup
+            let pickedThisWrongTeamToWin = false;
+            if (userPickedWinner && userPick) {
+                pickedThisWrongTeamToWin = transformTeamName(userPickedWinner.name) === transformTeamName(userPick);
+            }
+            return { state: 'wrong-team', userPick, actualTeam, isWinner, score, pickedToWin: pickedThisWrongTeamToWin };
         }
     };
 
-    const topInfo = getTeamDisplayInfo(topTeam, correctTeam1, 'top');
-    const bottomInfo = getTeamDisplayInfo(bottomTeam, correctTeam2, 'bottom');
+    // Determine which correctTeam matches which position (top/bottom) based on team name.
+    // NCAA game data stores teams as home/away which doesn't align with bracket position (top/bottom).
+    // We need to match by comparing team names to determine the correct mapping.
+    let correctTopTeam = correctTeam1;
+    let correctBottomTeam = correctTeam2;
+
+    if (showCorrectAnswers && correctTeam1 && correctTeam2 && (topTeam || bottomTeam)) {
+        const topTeamTransformed = topTeam ? transformTeamName(topTeam.name) : null;
+        const bottomTeamTransformed = bottomTeam ? transformTeamName(bottomTeam.name) : null;
+        const correct1Transformed = transformTeamName(correctTeam1);
+        const correct2Transformed = transformTeamName(correctTeam2);
+
+        // Check if the current mapping is wrong and needs to be swapped
+        // Case 1: topTeam matches correctTeam2 (currently mapped to bottom)
+        // Case 2: bottomTeam matches correctTeam1 (currently mapped to top)
+        const topMatchesCorrect2 = topTeamTransformed && topTeamTransformed === correct2Transformed;
+        const bottomMatchesCorrect1 = bottomTeamTransformed && bottomTeamTransformed === correct1Transformed;
+
+        // If either mismatch is detected, swap the mapping
+        if (topMatchesCorrect2 || bottomMatchesCorrect1) {
+            correctTopTeam = correctTeam2;
+            correctBottomTeam = correctTeam1;
+        }
+    }
+
+    const topInfo = getTeamDisplayInfo(topTeam, correctTopTeam, 'top');
+    const bottomInfo = getTeamDisplayInfo(bottomTeam, correctBottomTeam, 'bottom');
 
     const renderTeam = (info: TeamDisplayInfo, position: 'top' | 'bottom') => {
         const positionClass = `${position}-team`;
@@ -158,37 +190,43 @@ function Matchup({
         return (
             <div className={`team ${positionClass} ${stateClass} ${winnerClass}`.trim()}>
                 {info.state === 'wrong-team' ? (
-                    // Wrong team scenario: show strikethrough + actual team
+                    // Wrong team scenario: strikethrough pick on top, actual team + score below inline
                     <div className="wrong-team-display">
                         {info.userPick && (
-                            <span className="strikethrough-pick">
-                                {formatTeamName(info.userPick)}
-                                <span className="wrong-icon" aria-label="Wrong pick">✗</span>
-                            </span>
+                            <div className="wrong-team-pick-row">
+                                {info.pickedToWin && (
+                                    <span className="status-icon loser-icon" aria-label="Lost">✗</span>
+                                )}
+                                <span className="strikethrough-pick">
+                                    {formatTeamName(info.userPick)}
+                                </span>
+                            </div>
                         )}
-                        {info.actualTeam && (
-                            <span className={`actual-team ${info.isWinner ? 'winner' : ''}`}>
-                                {formatTeamName(info.actualTeam)}
-                            </span>
-                        )}
-                        {showCorrectAnswers && info.score != null && (
-                            <span className="team-score">{info.score}</span>
-                        )}
+                        <div className="actual-team-row">
+                            {info.actualTeam && (
+                                <span className={`actual-team ${info.isWinner ? 'winner' : ''}`}>
+                                    {formatTeamName(info.actualTeam)}
+                                </span>
+                            )}
+                            {showCorrectAnswers && info.score != null && (
+                                <span className="team-score">{info.score}</span>
+                            )}
+                        </div>
                     </div>
                 ) : (
-                    // Normal display: team name with optional indicators
+                    // Normal display: team name with optional indicators (icons before name)
                     <>
-                        <span className="team-name">
-                            {info.userPick ? formatTeamName(info.userPick) : '—'}
-                        </span>
-                        {showCorrectAnswers && info.score != null && (
-                            <span className="team-score">{info.score}</span>
-                        )}
                         {info.state === 'correct-winner' && (
                             <span className="status-icon correct-icon" aria-label="Correct pick">✓</span>
                         )}
                         {info.state === 'correct-loser' && (
                             <span className="status-icon loser-icon" aria-label="Lost">✗</span>
+                        )}
+                        <span className="team-name">
+                            {info.userPick ? formatTeamName(info.userPick) : '—'}
+                        </span>
+                        {showCorrectAnswers && info.score != null && (
+                            <span className="team-score">{info.score}</span>
                         )}
                     </>
                 )}

@@ -35,6 +35,7 @@ interface ChampionViewProps {
     contributors?: string[];
     onOpenAddContributorModal?: () => void;
     onLeaveBracket?: () => void;
+    onDeleteBracket?: () => void;
 }
 
 function ChampionView({
@@ -60,7 +61,8 @@ function ChampionView({
     isSecondaryOwner = false,
     contributors = [],
     onOpenAddContributorModal,
-    onLeaveBracket
+    onLeaveBracket,
+    onDeleteBracket
 }: ChampionViewProps): React.ReactElement {
     return (
         <div className="winner-selection-container">
@@ -186,6 +188,31 @@ function ChampionView({
                                     Current contributors: {contributors.join(', ')}
                                 </p>
                             )}
+                        </div>
+                    )}
+
+                    {/* Delete Bracket Button - only for primary owner */}
+                    {user && !isSecondaryOwner && onDeleteBracket && (
+                        <div className="delete-bracket-section" style={{ marginTop: '20px' }}>
+                            <button
+                                onClick={onDeleteBracket}
+                                disabled={!saved}
+                                className="danger-btn"
+                                style={{
+                                    width: '100%',
+                                    background: saved ? 'var(--danger, #dc3545)' : '#888',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px 20px',
+                                    borderRadius: '8px',
+                                    cursor: saved ? 'pointer' : 'not-allowed',
+                                    fontSize: '1rem',
+                                    opacity: saved ? 1 : 0.6
+                                }}
+                                title={!saved ? 'Save your bracket first before you can delete it' : ''}
+                            >
+                                {!saved ? '🔒 Delete Bracket (Save First)' : '🗑️ Delete Bracket'}
+                            </button>
                         </div>
                     )}
 

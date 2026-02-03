@@ -10,6 +10,7 @@ import {
     setDoc,
     getDoc,
     getDocs,
+    deleteDoc,
     collection,
     query,
     where,
@@ -761,5 +762,53 @@ export async function leaveBracket(
     } catch (error) {
         console.error('Error leaving bracket:', error);
         return { success: false, error: 'Failed to leave bracket. Please try again.' };
+    }
+}
+
+/**
+ * Delete a bracket and its associated leaderboard entry
+ * Only the owner can delete their bracket
+ */
+export async function deleteBracket(
+    user: User,
+    year: number,
+    gender: Gender = 'men'
+): Promise<{ success: boolean; error?: string }> {
+    if (!user) {
+        return { success: false, error: 'You must be logged in to delete a bracket.' };
+    }
+
+    try {
+        // 1. Load the bracket to verify ownership
+        const bracketRef: DocumentReference = doc(db, `brackets/${gender}/years/${year}/users/${user.uid}`);
+        const bracketSnapshot = await getDoc(bracketRef);
+
+        if (!bracketSnapshot.exists()) {
+            return { success: false, error: 'Bracket not found.' };
+        }
+
+        const bracketData = bracketSnapshot.data();
+        const ownerUid = bracketData.ownerUid || user.uid; // Fallback for older brackets
+
+        // Verify ownership
+        if (ownerUid !== user.uid) {
+            return { success: false, error: 'You can only delete brackets that you own.' };
+        }
+
+        // 2. Delete the bracket document
+        await deleteDoc(bracketRef);
+
+        // 3. Delete the leaderboard entry if it exists
+        const leaderboardRef: DocumentReference = doc(db, `leaderboard/${gender}/years/${year}/entries/${user.uid}`);
+        const leaderboardSnapshot = await getDoc(leaderboardRef);
+
+        if (leaderboardSnapshot.exists()) {
+            await deleteDoc(leaderboardRef);
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting bracket:', error);
+        return { success: false, error: 'Failed to delete bracket. Please try again.' };
     }
 }

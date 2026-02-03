@@ -6,9 +6,10 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTournament } from '../hooks/useTournament';
 import { useAuth } from '../hooks/useAuth';
-import { initializeBracket, loadBracket, Region, loadTemporaryBracket } from '../services/bracketService';
+import { initializeBracket, loadBracket, Region, loadTemporaryBracket, deleteBracket, saveTemporaryBracket } from '../services/bracketService';
 import { loadCorrectBracket, CorrectBracket } from '../services/correctBracketService';
 import ComingSoon from '../components/ComingSoon';
 import FullBracketDisplay from '../components/FullBracketDisplay';
@@ -18,6 +19,7 @@ import './FullBracket.css';
 function FullBracket(): React.ReactElement {
     const { selectedYear, selectedGender, getBracketData, getRegionOrder, getFirstFourMapping, hasBracketData, getSelectionSundayTime } = useTournament();
     const { user } = useAuth();
+    const navigate = useNavigate();
 
     // Convert UI gender ('M'/'W') to service gender ('men'/'women')
     const genderPath: Gender = selectedGender === 'W' ? 'women' : 'men';
@@ -26,6 +28,7 @@ function FullBracket(): React.ReactElement {
     const [loading, setLoading] = useState<boolean>(true);
     const [bracketName, setBracketName] = useState<string>('');
     const [correctBracket, setCorrectBracket] = useState<CorrectBracket | null>(null);
+    const [hasSavedBracket, setHasSavedBracket] = useState<boolean>(false);
 
     // Load bracket on mount and when year/gender/user changes
     useEffect(() => {
@@ -80,6 +83,7 @@ function FullBracket(): React.ReactElement {
                 if (savedBracket) {
                     setRegions(savedBracket.regions);
                     setBracketName(savedBracket.name || '');
+                    setHasSavedBracket(true);
                     setLoading(false);
                     return;
                 }
@@ -104,7 +108,30 @@ function FullBracket(): React.ReactElement {
         const newRegions = initializeBracket(selectedYear, bracketDataForYear, regionOrderForYear, firstFourMappingForYear);
         setRegions(newRegions);
         setBracketName('');
+        setHasSavedBracket(false);
         setLoading(false);
+    };
+
+    // Handle deleting the bracket
+    const handleDeleteBracket = async (): Promise<void> => {
+        if (!user) return;
+
+        const confirmed = window.confirm(
+            'Are you sure you want to delete this bracket? This action cannot be undone and will also remove your entry from the leaderboard.'
+        );
+
+        if (!confirmed) return;
+
+        const result = await deleteBracket(user, selectedYear, genderPath);
+
+        if (result.success) {
+            alert('Your bracket has been deleted.');
+            // Clear local state
+            saveTemporaryBracket(selectedYear, null, genderPath);
+            navigate('/');
+        } else {
+            alert(result.error || 'Failed to delete bracket. Please try again.');
+        }
     };
 
     if (loading) {
@@ -127,6 +154,8 @@ function FullBracket(): React.ReactElement {
             regionOrder={getRegionOrder() || []}
             correctBracket={correctBracket}
             showCorrectAnswers={true}
+            isOwner={!!user && hasSavedBracket}
+            onDeleteBracket={handleDeleteBracket}
         >
             {!user && (
                 <div className="info-banner">

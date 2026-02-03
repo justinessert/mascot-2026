@@ -32,6 +32,9 @@ interface FullBracketDisplayProps {
     // Props for contributor leaving
     isContributor?: boolean;
     onLeaveBracket?: () => void;
+    // Props for owner deleting
+    isOwner?: boolean;
+    onDeleteBracket?: () => void;
 }
 
 function FullBracketDisplay({
@@ -48,7 +51,9 @@ function FullBracketDisplay({
     correctBracket,
     showCorrectAnswers = false,
     isContributor = false,
-    onLeaveBracket
+    onLeaveBracket,
+    isOwner = false,
+    onDeleteBracket
 }: FullBracketDisplayProps): React.ReactElement {
     const numericYear = parseInt(String(year), 10);
 
@@ -166,6 +171,26 @@ function FullBracketDisplay({
                         }}
                     >
                         Leave Bracket
+                    </button>
+                )}
+
+                {/* Delete Bracket button for owners */}
+                {isOwner && onDeleteBracket && (
+                    <button
+                        className="delete-bracket-btn"
+                        onClick={onDeleteBracket}
+                        style={{
+                            marginTop: '10px',
+                            padding: '8px 16px',
+                            background: 'var(--danger, #dc3545)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem'
+                        }}
+                    >
+                        🗑️ Delete Bracket
                     </button>
                 )}
             </div>

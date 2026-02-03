@@ -15,7 +15,7 @@ import { useTournament } from '../hooks/useTournament';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigationBlocker } from '../hooks/useNavigationBlocker';
 import { formatTeamName, formatMascotName } from '../constants/nicknames';
-import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket, addContributor, getSharedBrackets, loadBracketByUserId, leaveBracket } from '../services/bracketService';
+import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket, addContributor, getSharedBrackets, loadBracketByUserId, leaveBracket, deleteBracket } from '../services/bracketService';
 import ComingSoon from '../components/ComingSoon';
 import RegionProgress from '../components/RegionProgress';
 import ChampionView from '../components/ChampionView';
@@ -613,6 +613,29 @@ function WinnerSelection(): React.ReactElement {
         }
     };
 
+    // Handle deleting the bracket (primary owner only)
+    const handleDeleteBracket = async (): Promise<void> => {
+        if (!user) return;
+
+        const confirmed = window.confirm(
+            'Are you sure you want to delete this bracket? This action cannot be undone and will also remove your entry from the leaderboard.'
+        );
+
+        if (!confirmed) return;
+
+        const result = await deleteBracket(user, selectedYear, genderPath);
+
+        if (result.success) {
+            alert('Your bracket has been deleted.');
+            // Clear local state
+            saveTemporaryBracket(selectedYear, null, genderPath);
+            // Navigate to home
+            safeNavigate('/');
+        } else {
+            alert(result.error || 'Failed to delete bracket. Please try again.');
+        }
+    };
+
     // Loading state
     if (loading) {
         return (
@@ -655,6 +678,7 @@ function WinnerSelection(): React.ReactElement {
                     onOpenAddContributorModal={() => setShowAddContributorModal(true)}
                     isSecondaryOwner={isSecondaryOwner}
                     onLeaveBracket={handleLeaveBracket}
+                    onDeleteBracket={handleDeleteBracket}
                 />
                 <AddContributorModal
                     isOpen={showAddContributorModal}

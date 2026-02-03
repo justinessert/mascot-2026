@@ -8,7 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { loadBracketByUserId, leaveBracket, Region } from '../services/bracketService';
+import { loadBracketByUserId, leaveBracket, deleteBracket, Region } from '../services/bracketService';
 import { loadCorrectBracket, CorrectBracket } from '../services/correctBracketService';
 import { mensTournaments, womensTournaments } from '../constants/bracketData';
 import { useAuth } from '../hooks/useAuth';
@@ -36,6 +36,7 @@ function BracketView(): React.ReactElement {
     const [userName, setUserName] = useState<string>('');
     const [contributors, setContributors] = useState<string[]>([]);
     const [contributorUids, setContributorUids] = useState<string[]>([]);
+    const [ownerUid, setOwnerUid] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [correctBracket, setCorrectBracket] = useState<CorrectBracket | null>(null);
 
@@ -47,6 +48,9 @@ function BracketView(): React.ReactElement {
 
     // Check if current user is a contributor to this bracket
     const isContributor = user && uuid && contributorUids.includes(user.uid);
+
+    // Check if current user is the owner of this bracket
+    const isOwner = user && ownerUid && user.uid === ownerUid;
 
     // Load the shared bracket and correct bracket on mount
     useEffect(() => {
@@ -66,6 +70,7 @@ function BracketView(): React.ReactElement {
                 setUserName(bracket.userName || 'Anonymous');
                 setContributors(bracket.contributors || []);
                 setContributorUids(bracket.contributorUids || []);
+                setOwnerUid(bracket.ownerUid || uuid || null);
             } else {
                 setError('Bracket not found');
             }
@@ -94,6 +99,26 @@ function BracketView(): React.ReactElement {
             navigate('/leaderboard');
         } else {
             alert(result.error || 'Failed to leave bracket. Please try again.');
+        }
+    };
+
+    // Handle deleting this bracket (owner only)
+    const handleDeleteBracket = async (): Promise<void> => {
+        if (!user || !isOwner) return;
+
+        const confirmed = window.confirm(
+            'Are you sure you want to delete this bracket? This action cannot be undone and will also remove your entry from the leaderboard.'
+        );
+
+        if (!confirmed) return;
+
+        const result = await deleteBracket(user, numericYear, genderPath);
+
+        if (result.success) {
+            alert('Your bracket has been deleted.');
+            navigate('/');
+        } else {
+            alert(result.error || 'Failed to delete bracket. Please try again.');
         }
     };
 
@@ -136,6 +161,8 @@ function BracketView(): React.ReactElement {
             showCorrectAnswers={true}
             isContributor={isContributor || false}
             onLeaveBracket={handleLeaveBracket}
+            isOwner={isOwner || false}
+            onDeleteBracket={handleDeleteBracket}
         />
     );
 }

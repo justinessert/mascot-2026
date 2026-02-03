@@ -14,6 +14,7 @@ Mascot Madness is a fun alternative to traditional bracket competitions. Instead
 - **Shareable Brackets** - Share your bracket with friends via unique URLs
 - **Leaderboard** - Compete with others and track scores as the tournament progresses
 - **User Authentication** - Create an account to save and manage your brackets
+- **Bracket Deletion** - Delete your bracket if you want to start fresh (also removes leaderboard entry)
 
 ## Tech Stack
 

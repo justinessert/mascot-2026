@@ -21,13 +21,16 @@ import {
     joinCustomLeaderboard,
     hasPublishedBracket,
     getCustomLeaderboard,
+    getUserCustomLeaderboards,
     CustomLeaderboardMeta,
 } from '../services/leaderboardService';
+import CreateOtherBracketPrompt from '../components/CreateOtherBracketPrompt';
+import { loadBracket } from '../services/bracketService';
 import ComingSoon from '../components/ComingSoon';
 import LeaderboardSelector from '../components/LeaderboardSelector';
 import CreateLeaderboardModal from '../components/CreateLeaderboardModal';
 import JoinLeaderboardModal from '../components/JoinLeaderboardModal';
-import type { Gender } from '../types/bracket';
+import type { Gender, GenderCode } from '../types/bracket';
 import './Leaderboard.css';
 
 interface LeaderboardBracket {
@@ -36,6 +39,7 @@ interface LeaderboardBracket {
     bracketName: string;
     userName: string;
     contributors?: string[];
+    contributorUids?: string[];
     score: number;
     maxScore: number | null;
     champion: Team | null;
@@ -44,7 +48,7 @@ interface LeaderboardBracket {
 
 function Leaderboard(): React.ReactElement {
     const navigate = useNavigate();
-    const { selectedYear, selectedGender, getCutoffTime, hasBracketData, getSelectionSundayTime } = useTournament();
+    const { selectedYear, selectedGender, setSelectedGender, getCutoffTime, hasBracketData, getSelectionSundayTime } = useTournament();
     const { user } = useAuth();
 
     // Convert UI gender ('M'/'W') to service gender ('men'/'women')
@@ -65,6 +69,9 @@ function Leaderboard(): React.ReactElement {
     // User state
     const [userHasPublished, setUserHasPublished] = useState<boolean>(false);
     const [userIsMember, setUserIsMember] = useState<boolean>(false);
+    const [userCustomLeaderboards, setUserCustomLeaderboards] = useState<CustomLeaderboardMeta[]>([]);
+    const [showCustomLbPrompt, setShowCustomLbPrompt] = useState<boolean>(true);
+    const [hasOtherGenderBracket, setHasOtherGenderBracket] = useState<boolean>(true);
 
     // Modal state
     const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
@@ -134,6 +141,36 @@ function Leaderboard(): React.ReactElement {
         checkMembership();
     }, [user, selectedLeaderboardId, selectedYear, genderPath]);
 
+    // Check what custom leaderboards the user is in
+    useEffect(() => {
+        const checkUserLeaderboards = async () => {
+            if (user) {
+                const userLbs = await getUserCustomLeaderboards(user, selectedYear, genderPath);
+                setUserCustomLeaderboards(userLbs);
+            } else {
+                setUserCustomLeaderboards([]);
+            }
+        };
+        checkUserLeaderboards();
+    }, [user, selectedYear, genderPath]);
+
+    // Check if user has the OTHER gender bracket for this year
+    useEffect(() => {
+        const checkOtherGender = async (): Promise<void> => {
+            if (user) {
+                // Determine opposite gender path
+                const otherGenderPath: Gender = selectedGender === 'W' ? 'men' : 'women';
+                try {
+                    const otherBracket = await loadBracket(user, selectedYear, otherGenderPath);
+                    setHasOtherGenderBracket(!!otherBracket);
+                } catch (error) {
+                    console.error('Error checking other gender bracket:', error);
+                }
+            }
+        };
+        checkOtherGender();
+    }, [user, selectedYear, selectedGender]);
+
     // Load leaderboard data
     useEffect(() => {
         loadLeaderboard();
@@ -154,7 +191,8 @@ function Leaderboard(): React.ReactElement {
                     bracketId: entry.bracketId,
                     bracketName: entry.bracketName,
                     userName: entry.userName,
-                    contributors: (entry as { contributors?: string[] }).contributors || [],
+                    contributors: entry.contributors || [],
+                    contributorUids: entry.contributorUids || [],
                     score: entry.score,
                     maxScore: entry.maxScore,
                     champion: entry.champion ? Team.fromDict(entry.champion as { name: string; seed: number }, selectedYear) : null,
@@ -173,6 +211,7 @@ function Leaderboard(): React.ReactElement {
                         bracketName: data.bracketName || 'Unknown',
                         userName: data.userName || 'Anonymous',
                         contributors: data.contributors || [],
+                        contributorUids: data.contributorUids || [],
                         score: data.score ?? 0,
                         maxScore: data.maxScore ?? null,
                         champion: data.champion ? Team.fromDict(data.champion, selectedYear) : null,
@@ -284,6 +323,11 @@ function Leaderboard(): React.ReactElement {
         return result;
     };
 
+    // Handle dismissing the custom leaderboard prompt
+    const dismissCustomLbPrompt = (): void => {
+        setShowCustomLbPrompt(false);
+    };
+
     // Handle create button click (with disabled state handling)
     const handleCreateClick = (): void => {
         if (!userHasPublished) {
@@ -294,13 +338,26 @@ function Leaderboard(): React.ReactElement {
         setShowCreateModal(true);
     };
 
+    const handleCreateOtherGender = (): void => {
+        const newGender: GenderCode = selectedGender === 'M' ? 'W' : 'M';
+        setSelectedGender(newGender);
+        navigate('/bracket/pick');
+    };
+
+    // Check if user is a contributor on any bracket in the list
+    const isContributor = useMemo(() => {
+        if (!user || brackets.length === 0) return false;
+        return brackets.some(b => b.contributorUids?.includes(user.uid));
+    }, [user, brackets]);
+
+    const canCreate = user && userHasPublished;
+
+    const canJoin = user && selectedLeaderboardId !== null && !userIsMember;
+
     // Show coming soon if no bracket data for this year
     if (!hasBracketData()) {
         return <ComingSoon year={selectedYear} selectionSundayTime={getSelectionSundayTime()} />;
     }
-
-    const canCreate = user && userHasPublished;
-    const canJoin = user && selectedLeaderboardId !== null && !userIsMember;
 
     return (
         <div className="leaderboard-container">
@@ -311,10 +368,23 @@ function Leaderboard(): React.ReactElement {
                     <button className="close-btn" onClick={() => setShowLoginBanner(false)}>×</button>
                 </div>
             )}
-            {user && !userBracket && showPublishBanner && !loading && selectedLeaderboardId === null && (
-                <div className="info-banner">
-                    ℹ️ Create & publish a bracket to get on the leaderboard
-                    <button className="close-btn" onClick={() => setShowPublishBanner(false)}>×</button>
+            {user && !userBracket && !isContributor && showPublishBanner && !loading && selectedLeaderboardId === null && (
+                <CreateOtherBracketPrompt
+                    targetGender={selectedGender}
+                    onCreate={() => navigate('/bracket/pick')}
+                    onDismiss={() => setShowPublishBanner(false)}
+                    message="Create & publish a bracket to get on the leaderboard"
+                />
+            )}
+
+            {/* Custom Leaderboard Prompt - Show if published but only in global (no custom groups) */}
+            {user && userHasPublished && userCustomLeaderboards.length === 0 && showCustomLbPrompt && (
+                <div className="info-banner custom-lb-prompt">
+                    <div className="prompt-content">
+                        <strong>Want to compete with friends?</strong>
+                        <span>Create or join a custom leaderboard to see how you stack up against them!</span>
+                    </div>
+                    <button className="close-btn" onClick={dismissCustomLbPrompt}>×</button>
                 </div>
             )}
 
@@ -471,6 +541,15 @@ function Leaderboard(): React.ReactElement {
                 <div className="info-note">
                     🔒 Brackets will be viewable after the tournament starts
                 </div>
+            )}
+
+            {/* Cross-Gender Promotion - only if top prompt is NOT visible */}
+            {user && !hasOtherGenderBracket && !(user && !userBracket && !isContributor && showPublishBanner && selectedLeaderboardId === null) && (
+                <CreateOtherBracketPrompt
+                    targetGender={selectedGender === 'M' ? 'W' : 'M'}
+                    onCreate={handleCreateOtherGender}
+                    message={`Compete in the ${selectedGender === 'M' ? "Women's" : "Men's"} leaderboard${userHasPublished ? ' as well' : ''}!`}
+                />
             )}
 
             {/* Modals */}

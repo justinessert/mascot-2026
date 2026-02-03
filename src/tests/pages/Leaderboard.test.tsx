@@ -203,4 +203,79 @@ describe('Leaderboard Page', () => {
 
         expect(screen.getByTestId('leaderboard-selector')).toBeInTheDocument();
     });
+    it('shows create prompt when user has not published or collaborated', async () => {
+        // User logged in
+        vi.spyOn(AuthHook, 'useAuth').mockReturnValue({
+            user: { uid: 'my-uid' }
+        } as any);
+
+        // User has NOT published
+        vi.spyOn(LeaderboardService, 'hasPublishedBracket').mockResolvedValue(false);
+
+        // Leaderboard has brackets, but user is NOT in them
+        const mockData = [
+            {
+                id: '1',
+                data: () => ({
+                    bracketId: 'other-uid',
+                    bracketName: 'Other Bracket',
+                    score: 100,
+                    contributorUids: []
+                })
+            }
+        ];
+
+        mockGetDocs.mockResolvedValue({
+            forEach: (cb: any) => mockData.forEach(cb)
+        });
+
+        render(
+            <MemoryRouter>
+                <Leaderboard />
+            </MemoryRouter>
+        );
+
+        // Should see the prompt
+        // "Create & publish a bracket to get on the leaderboard"
+        expect(await screen.findByText(/Create & publish a bracket/i)).toBeInTheDocument();
+    });
+
+    it('hides create prompt when user is a contributor', async () => {
+        // User logged in
+        vi.spyOn(AuthHook, 'useAuth').mockReturnValue({
+            user: { uid: 'contributor-uid' }
+        } as any);
+
+        // User has NOT published their own bracket
+        vi.spyOn(LeaderboardService, 'hasPublishedBracket').mockResolvedValue(false);
+
+        // User IS a contributor
+        const mockData = [
+            {
+                id: '1',
+                data: () => ({
+                    bracketId: 'owner-uid',
+                    bracketName: 'Shared Bracket',
+                    score: 100,
+                    contributorUids: ['contributor-uid']
+                })
+            }
+        ];
+
+        mockGetDocs.mockResolvedValue({
+            forEach: (cb: any) => mockData.forEach(cb)
+        });
+
+        render(
+            <MemoryRouter>
+                <Leaderboard />
+            </MemoryRouter>
+        );
+
+        // Wait for loading to finish
+        await waitFor(() => expect(screen.queryByText(/loading leaderboard/i)).not.toBeInTheDocument());
+
+        // Should NOT see the prompt
+        expect(screen.queryByText(/Create & publish a bracket/i)).not.toBeInTheDocument();
+    });
 });

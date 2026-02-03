@@ -62,6 +62,8 @@ export interface LeaderboardEntry {
     score: number;
     maxScore: number | null;
     champion: DocumentData | null;
+    contributors?: string[];
+    contributorUids?: string[];
 }
 
 /**
@@ -173,6 +175,8 @@ export async function getCustomLeaderboardEntries(
             score: data.score ?? 0,
             maxScore: data.maxScore ?? null,
             champion: data.champion || null,
+            contributors: data.contributors || [],
+            contributorUids: data.contributorUids || [],
         });
     });
 
@@ -306,4 +310,36 @@ export async function isUserMemberOfLeaderboard(
     if (!leaderboard) return false;
 
     return leaderboard.memberIds.includes(user.uid);
+}
+
+/**
+ * Get all custom leaderboards a user is a member of
+ */
+export async function getUserCustomLeaderboards(
+    user: User | null,
+    year: number,
+    gender: Gender = 'men'
+): Promise<CustomLeaderboardMeta[]> {
+    if (!user) return [];
+
+    const collectionRef = collection(db, getCustomLeaderboardsPath(gender, year));
+    // Check if user's UID is in the memberIds array
+    const q = query(collectionRef, where('memberIds', 'array-contains', user.uid));
+
+    const snapshot = await getDocs(q);
+    const leaderboards: CustomLeaderboardMeta[] = [];
+
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        leaderboards.push({
+            id: doc.id,
+            name: data.name || 'Unnamed',
+            description: data.description || '',
+            hasPassword: !!data.passwordHash,
+            memberCount: (data.memberIds || []).length,
+            creatorId: data.creatorId || '',
+        });
+    });
+
+    return leaderboards;
 }

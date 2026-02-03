@@ -548,6 +548,7 @@ function WinnerSelection(): React.ReactElement {
             await publishBracket(user!, selectedYear, regions, bracketName, champion, genderPath);
             setPublished(true);
             alert('Bracket published to leaderboard!');
+            safeNavigate('/leaderboard');
         } catch (error) {
             console.error('Error publishing bracket:', error);
             alert('Failed to publish bracket. Please try again.');

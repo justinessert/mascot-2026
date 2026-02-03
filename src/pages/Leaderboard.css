@@ -85,6 +85,54 @@
     }
 }
 
+/* Custom Leaderboard Prompt */
+.custom-lb-prompt {
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: #f0f7ff;
+    border: 1px solid #cce5ff;
+    color: #004085;
+}
+
+.custom-lb-prompt .prompt-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.custom-lb-prompt strong {
+    font-size: 1.1em;
+}
+
+@media (min-width: 768px) {
+    .custom-lb-prompt .prompt-content {
+        flex-direction: row;
+        gap: 12px;
+        align-items: center;
+    }
+}
+
+.custom-lb-prompt .close-btn {
+    color: currentColor !important;
+    opacity: 0.6;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+.custom-lb-prompt .close-btn:hover {
+    opacity: 1;
+}
+
 /* Leaderboard Controls Row (Selector + Buttons) */
 .leaderboard-controls {
     display: flex;

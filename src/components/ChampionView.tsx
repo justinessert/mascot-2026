@@ -9,6 +9,7 @@ import { formatTeamName, getMascotName } from '../constants/nicknames';
 import { Team } from '../services/bracketService';
 import { User } from 'firebase/auth';
 import type { GenderCode } from '../types/bracket';
+import CreateOtherBracketPrompt from './CreateOtherBracketPrompt';
 
 interface ChampionViewProps {
     champion: Team;
@@ -218,17 +219,10 @@ function ChampionView({
 
                     {/* Cross-Gender Promotion */}
                     {user && !hasOtherGenderBracket && (
-                        <div className="cross-gender-promo">
-                            <p>You haven't filled out a {selectedGender === 'M' ? "Women's" : "Men's"} bracket yet!</p>
-                            <p>First, save and/or publish your current bracket and then you can create a {selectedGender === 'M' ? "Women's" : "Men's"} bracket.</p>
-                            <button
-                                onClick={onCreateOtherGender}
-                                className="create-bracket-btn"
-                                style={{ marginTop: '10px', width: '100%' }}
-                            >
-                                Create {selectedGender === 'M' ? "Women's" : "Men's"} Bracket
-                            </button>
-                        </div>
+                        <CreateOtherBracketPrompt
+                            targetGender={selectedGender === 'M' ? 'W' : 'M'}
+                            onCreate={onCreateOtherGender}
+                        />
                     )}
 
                     {!user && (

@@ -56,6 +56,9 @@ function Login(): React.ReactElement {
                 case 'auth/invalid-credential':
                     setError('Invalid email or password');
                     break;
+                case 'auth/too-many-requests':
+                    setError('Access to this account has been temporarily disabled due to many failed login attempts. Please try again later.');
+                    break;
                 default:
                     setError('Failed to log in. Please try again.');
             }

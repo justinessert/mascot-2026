@@ -7,12 +7,15 @@
 
 import { useState, FormEvent, ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTitle } from '../hooks/useTitle';
 import { useAuth } from '../hooks/useAuth';
 import { AuthError } from 'firebase/auth';
 import PasswordInput from '../components/PasswordInput';
+import { logAnalyticsEvent } from '../utils/analytics';
 import './Auth.css';
 
 function Signup(): React.ReactElement {
+    useTitle('Sign Up');
     // Form state - same pattern as Login
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
@@ -50,6 +53,9 @@ function Signup(): React.ReactElement {
             // signup() is defined in useAuth.tsx
             // It creates the account AND sets the display name
             await signup(email, password, displayName);
+            logAnalyticsEvent('sign_up', {
+                method: 'password'
+            });
 
             // Redirect to home after successful signup
             navigate('/');

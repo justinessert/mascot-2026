@@ -14,9 +14,11 @@ import { loadCorrectBracket, CorrectBracket } from '../services/correctBracketSe
 import ComingSoon from '../components/ComingSoon';
 import FullBracketDisplay from '../components/FullBracketDisplay';
 import type { Gender } from '../types/bracket';
+import { useTitle } from '../hooks/useTitle';
 import './FullBracket.css';
 
 function FullBracket(): React.ReactElement {
+    useTitle('Full Bracket');
     const { selectedYear, selectedGender, getBracketData, getRegionOrder, getFirstFourMapping, hasBracketData, getSelectionSundayTime } = useTournament();
     const { user } = useAuth();
     const navigate = useNavigate();

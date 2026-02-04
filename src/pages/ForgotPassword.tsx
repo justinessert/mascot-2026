@@ -9,11 +9,13 @@
 
 import { useState, FormEvent, ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useTitle } from '../hooks/useTitle';
 import { useAuth } from '../hooks/useAuth';
 import { AuthError } from 'firebase/auth';
 import './Auth.css';
 
 function ForgotPassword(): React.ReactElement {
+    useTitle('Forgot Password');
     const [email, setEmail] = useState<string>('');
     const [error, setError] = useState<string>('');
     const [message, setMessage] = useState<string>('');  // Success message

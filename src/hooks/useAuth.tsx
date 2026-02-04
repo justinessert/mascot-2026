@@ -48,6 +48,20 @@ export function AuthProvider({ children }: AuthProviderProps): React.ReactElemen
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user);
             setLoading(false);
+
+            if (user) {
+                // Set User ID in Analytics
+                import('../utils/analytics').then(({ setAnalyticsUserId, setAnalyticsUserProperty }) => {
+                    setAnalyticsUserId(user.uid);
+                    setAnalyticsUserProperty({ is_logged_in: 'true' });
+                });
+            } else {
+                // Clear User ID on logout
+                import('../utils/analytics').then(({ setAnalyticsUserId, setAnalyticsUserProperty }) => {
+                    setAnalyticsUserId(null);
+                    setAnalyticsUserProperty({ is_logged_in: 'false' });
+                });
+            }
         });
 
         // Cleanup subscription

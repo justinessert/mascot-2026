@@ -5,10 +5,12 @@
  */
 
 import { Link } from 'react-router-dom';
+import { useTitle } from '../hooks/useTitle';
 import HowItWorks from '../components/HowItWorks';
 import './Info.css';
 
 function Info(): React.ReactElement {
+    useTitle('How It Works');
     return (
         <div className="info-container">
             <h1>🏀 About Mascot Madness</h1>

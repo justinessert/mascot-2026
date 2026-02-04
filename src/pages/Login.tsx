@@ -6,12 +6,15 @@
 
 import { useState, FormEvent, ChangeEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTitle } from '../hooks/useTitle';
 import { useAuth } from '../hooks/useAuth';
 import { AuthError } from 'firebase/auth';
 import PasswordInput from '../components/PasswordInput';
+import { logAnalyticsEvent } from '../utils/analytics';
 import './Auth.css';
 
 function Login(): React.ReactElement {
+    useTitle('Log In');
     // Form state
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
@@ -37,6 +40,9 @@ function Login(): React.ReactElement {
         try {
             setLoading(true);
             await login(email, password);
+            logAnalyticsEvent('login', {
+                method: 'password'
+            });
             navigate(redirectPath);
 
         } catch (err) {

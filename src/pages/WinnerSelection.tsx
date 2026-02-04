@@ -10,12 +10,13 @@
  * 4. Progress is shown for each region
  */
 
-import { useState, useEffect, useRef, Fragment } from 'react';
+import { useState, useEffect, useRef, Fragment, useCallback, useMemo } from 'react';
+import { useTitle } from '../hooks/useTitle';
 import { useTournament } from '../hooks/useTournament';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigationBlocker } from '../hooks/useNavigationBlocker';
 import { formatTeamName, formatMascotName } from '../constants/nicknames';
-import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket, addContributor, getSharedBrackets, loadBracketByUserId, leaveBracket, deleteBracket } from '../services/bracketService';
+import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket, addContributor, getSharedBrackets, loadBracketByUserId, leaveBracket, deleteBracket, TemporaryBracketData } from '../services/bracketService';
 import ComingSoon from '../components/ComingSoon';
 import RegionProgress from '../components/RegionProgress';
 import ChampionView from '../components/ChampionView';
@@ -31,6 +32,7 @@ import './WinnerSelection.css';
 type PreviousPicksMap = Record<string, Record<number, (TeamData | null)[]>>;
 
 function WinnerSelection(): React.ReactElement {
+    useTitle('Pick Your Bracket');
     const { safeNavigate, setBlocker, clearBlocker } = useNavigationBlocker();
     const { selectedYear, selectedGender, setSelectedGender, getBracketData, getRegionOrder, getFirstFourMapping, getCutoffTime, hasBracketData, getSelectionSundayTime } = useTournament();
     const { user } = useAuth();
@@ -61,72 +63,32 @@ function WinnerSelection(): React.ReactElement {
     const [isSecondaryOwner, setIsSecondaryOwner] = useState<boolean>(false);
     const [ownerUid, setOwnerUid] = useState<string | null>(null);
 
+    // --- Helper Functions ---
+
     // Check if we're past the cutoff time (no more saves/publishes allowed)
-    const isPastCutoff = (): boolean => {
+    const isPastCutoff = useCallback((): boolean => {
         const cutoff = getCutoffTime();
         return !!cutoff && new Date() >= cutoff;
-    };
+    }, [getCutoffTime]);
 
     // Check if user has unsaved completed bracket
-    const hasUnsavedBracket = champion && !saved;
+    const hasUnsavedBracket = useMemo(() => champion && !saved, [champion, saved]);
 
-    // Register navigation blocker when there's an unsaved bracket
-    useEffect(() => {
-        if (hasUnsavedBracket) {
-            setBlocker(
-                () => true,  // Block condition - always block when this is set
-                "You haven't saved your bracket yet! If you leave now, your selections won't be saved."
-            );
-        } else {
-            clearBlocker();
+    // Randomize matchup order so higher seed isn't always first
+    const setRandomizedMatchup = useCallback((matchup: [Team, Team] | null): void => {
+        if (!matchup || matchup.length !== 2) {
+            setCurrentMatchup(matchup || []);
+            return;
         }
-
-        // Cleanup on unmount
-        return () => clearBlocker();
-    }, [hasUnsavedBracket, setBlocker, clearBlocker]);
-
-    // Handle browser refresh/close (this still needs to be in the component)
-    useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent): string | undefined => {
-            if (hasUnsavedBracket) {
-                e.preventDefault();
-                e.returnValue = 'You have an unsaved bracket. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-            return undefined;
-        };
-
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [hasUnsavedBracket]);
-
-    // Check if user has the OTHER gender bracket for this year
-    useEffect(() => {
-        const checkOtherGender = async (): Promise<void> => {
-            if (user && champion) {
-                // Determine opposite gender path
-                const otherGenderPath: Gender = selectedGender === 'W' ? 'men' : 'women';
-                try {
-                    const otherBracket = await loadBracket(user, selectedYear, otherGenderPath);
-                    setHasOtherGenderBracket(!!otherBracket);
-                } catch (error) {
-                    console.error('Error checking other gender bracket:', error);
-                }
-            }
-        };
-        checkOtherGender();
-    }, [user, champion, selectedYear, selectedGender]);
-
-    const handleCreateOtherGender = (): void => {
-        const newGender: GenderCode = selectedGender === 'M' ? 'W' : 'M';
-        setSelectedGender(newGender);
-        // The change in selectedGender will trigger the main useEffect to re-initialize the bracket
-    };
+        // Simple random shuffle
+        const shuffled = Math.random() > 0.5 ? [matchup[0], matchup[1]] : [matchup[1], matchup[0]];
+        setCurrentMatchup(shuffled);
+    }, []);
 
     // Save bracket state to memory
-    const saveToMemory = (regionsData: Record<string, Region>, name: string, regionName: string, matchup: Team[]): void => {
+    const saveToMemory = useCallback((regionsData: Record<string, Region>, name: string, regionName: string, matchup: Team[]): void => {
         try {
-            const memoryData = {
+            const memoryData: TemporaryBracketData = {
                 regions: Object.keys(regionsData).reduce((acc, key) => {
                     acc[key] = regionsData[key]?.toDict?.() || null;
                     return acc;
@@ -135,22 +97,23 @@ function WinnerSelection(): React.ReactElement {
                 currentRegionName: regionName,
                 currentMatchup: matchup?.map(t => t?.toDict?.() || null) || []
             };
-            saveTemporaryBracket(selectedYear, memoryData as any, genderPath);
+            saveTemporaryBracket(selectedYear, memoryData, genderPath);
         } catch (error) {
             console.error('Error saving to memory:', error);
         }
-    };
+    }, [selectedYear, genderPath]);
 
     // Load bracket state from memory
-    const loadFromMemory = (): { regions: Record<string, Region>; bracketName: string; currentRegionName: string; currentMatchup: TeamData[] } | null => {
+    const loadFromMemory = useCallback((): { regions: Record<string, Region>; bracketName: string; currentRegionName: string; currentMatchup: (TeamData | null)[] } | null => {
         try {
             const memoryData = loadTemporaryBracket(selectedYear, genderPath);
             if (!memoryData) return null;
 
             const loadedRegions: Record<string, Region> = {};
             Object.keys(memoryData.regions).forEach(key => {
-                if (memoryData.regions[key]) {
-                    loadedRegions[key] = Region.fromDict(memoryData.regions[key], selectedYear);
+                const regionData = memoryData.regions[key];
+                if (regionData) {
+                    loadedRegions[key] = Region.fromDict(regionData, selectedYear);
                 }
             });
 
@@ -164,73 +127,7 @@ function WinnerSelection(): React.ReactElement {
             console.error('Error loading from memory:', error);
             return null;
         }
-    };
-
-    // Randomize matchup order so higher seed isn't always first
-    const setRandomizedMatchup = (matchup: [Team, Team] | null): void => {
-        if (!matchup || matchup.length !== 2) {
-            setCurrentMatchup(matchup || []);
-            return;
-        }
-        // Simple random shuffle
-        const shuffled = Math.random() > 0.5 ? [matchup[0], matchup[1]] : [matchup[1], matchup[0]];
-        setCurrentMatchup(shuffled);
-    };
-
-    // Initialize bracket when year or gender changes (user handled separately)
-    useEffect(() => {
-        isInitializing.current = false; // Reset when year/gender changes
-        initializeOrLoadBracket();
-        // Also check for shared brackets when year/gender changes and user is logged in
-        if (user) {
-            checkFirebaseBracket();
-        }
-    }, [selectedYear, selectedGender]);
-
-    // Handle user login - check if Firebase has saved bracket
-    useEffect(() => {
-        if (user && !isInitializing.current) {
-            checkFirebaseBracket();
-        }
-    }, [user]);
-
-    // Check Firebase for saved bracket when user logs in
-    const checkFirebaseBracket = async (): Promise<void> => {
-        try {
-            // First, check if user is a secondary contributor to another bracket
-            const sharedBrackets = await getSharedBrackets(user, selectedYear, genderPath);
-
-            if (sharedBrackets.length > 0) {
-                // User is a secondary contributor - load the shared bracket
-                const sharedBracket = sharedBrackets[0]; // Take the first shared bracket
-                const fullBracket = await loadBracketByUserId(sharedBracket.ownerUid, selectedYear, genderPath);
-                if (fullBracket) {
-                    applyLoadedBracket({
-                        ...fullBracket,
-                        ownerUid: sharedBracket.ownerUid
-                    });
-                    setIsSecondaryOwner(true);
-                    setOwnerUid(sharedBracket.ownerUid);
-                    saveTemporaryBracket(selectedYear, null, genderPath); // Clear memory
-                    return;
-                }
-            }
-
-            // Not a secondary contributor, check for user's own bracket
-            setIsSecondaryOwner(false);
-            setOwnerUid(null);
-
-            const savedBracket = await loadBracket(user, selectedYear, genderPath);
-            if (savedBracket) {
-                // Firebase has saved bracket - use it and override memory
-                applyLoadedBracket(savedBracket);
-                saveTemporaryBracket(selectedYear, null, genderPath); // Clear memory if loading from persistence
-            }
-            // If no saved bracket in Firebase, keep current memory state
-        } catch (error) {
-            console.error('Error checking Firebase bracket:', error);
-        }
-    };
+    }, [selectedYear, genderPath]);
 
     interface LoadedBracketData {
         regions: Record<string, Region>;
@@ -243,7 +140,7 @@ function WinnerSelection(): React.ReactElement {
     }
 
     // Apply a loaded bracket (from Firebase or memory) to state
-    const applyLoadedBracket = (savedBracket: LoadedBracketData): void => {
+    const applyLoadedBracket = useCallback((savedBracket: LoadedBracketData): void => {
         const regionOrderList = getRegionOrder() || [];
         setRegions(savedBracket.regions);
         setBracketName(savedBracket.name || savedBracket.bracketName || '');
@@ -277,17 +174,42 @@ function WinnerSelection(): React.ReactElement {
             setCurrentRegionName('final_four');
             setCurrentMatchup([]);
         }
-    };
+    }, [getRegionOrder, setRandomizedMatchup]);
 
-    const initializeOrLoadBracket = async (): Promise<void> => {
+    // Check Firebase for saved bracket when user logs in
+    const checkFirebaseBracket = useCallback(async (): Promise<void> => {
+        if (!user) return;
+        try {
+            const sharedBrackets = await getSharedBrackets(user, selectedYear, genderPath);
+            if (sharedBrackets.length > 0) {
+                const sharedBracket = sharedBrackets[0];
+                const fullBracket = await loadBracketByUserId(sharedBracket.ownerUid, selectedYear, genderPath);
+                if (fullBracket) {
+                    applyLoadedBracket({ ...fullBracket, ownerUid: sharedBracket.ownerUid });
+                    setIsSecondaryOwner(true);
+                    setOwnerUid(sharedBracket.ownerUid);
+                    saveTemporaryBracket(selectedYear, null, genderPath);
+                    return;
+                }
+            }
+            setIsSecondaryOwner(false);
+            setOwnerUid(null);
+            const savedBracket = await loadBracket(user, selectedYear, genderPath);
+            if (savedBracket) {
+                applyLoadedBracket(savedBracket);
+                saveTemporaryBracket(selectedYear, null, genderPath);
+            }
+        } catch (error) {
+            console.error('Error checking Firebase bracket:', error);
+        }
+    }, [user, selectedYear, genderPath, applyLoadedBracket]);
+
+    const initializeOrLoadBracket = useCallback(async (): Promise<void> => {
         if (isInitializing.current) return;
         isInitializing.current = true;
         setLoading(true);
 
         const bracketData = getBracketData();
-
-
-        // Check if we have data for this year (first region has teams)
         if (!bracketData) {
             setLoading(false);
             isInitializing.current = false;
@@ -295,104 +217,61 @@ function WinnerSelection(): React.ReactElement {
         }
 
         const firstRegionKey = Object.keys(bracketData)[0];
-        if (!firstRegionKey || !bracketData[firstRegionKey]?.length) {
-            setLoading(false);
-            isInitializing.current = false;
-            return;
-        }
-
-        // First, try to load from Firebase if user is logged in
-        if (user) {
-            try {
-                const savedBracket = await loadBracket(user, selectedYear, genderPath);
-                if (savedBracket) {
-                    // Firebase has saved bracket - use it
-                    applyLoadedBracket(savedBracket);
-                    saveTemporaryBracket(selectedYear, null, genderPath);
-                    setLoading(false);
-                    isInitializing.current = false;
-                    return;
-                }
-            } catch (error) {
-                console.error('Error loading saved bracket:', error);
-            }
-        }
-
-        // No Firebase bracket - try memory
         const memoryBracket = loadFromMemory();
         if (memoryBracket && Object.keys(memoryBracket.regions).length > 0) {
             applyLoadedBracket(memoryBracket);
-            setLoading(false);
-            isInitializing.current = false;
-            return;
-        }
-
-        // No saved bracket anywhere - create new one
-        createNewBracket();
-        isInitializing.current = false;
-    };
-
-    const createNewBracket = (): void => {
-        const bracketDataForYear = getBracketData();
-        const regionOrderForYear = getRegionOrder();
-        const firstFourMappingForYear = getFirstFourMapping();
-
-        // Initialize regions (this includes final_four with empty slots)
-        const newRegions = initializeBracket(selectedYear, bracketDataForYear, regionOrderForYear, firstFourMappingForYear);
-        setRegions(newRegions);
-
-        // Start with first region
-        if (regionOrderForYear && regionOrderForYear.length > 0) {
-            setCurrentRegionName(regionOrderForYear[0]);
-            const firstRegion = newRegions[regionOrderForYear[0]];
-            if (firstRegion) {
-                setRandomizedMatchup(firstRegion.getCurrentMatchup() || null);
+        } else {
+            const savedBracket = await loadBracket(user, selectedYear, genderPath);
+            if (savedBracket) {
+                applyLoadedBracket(savedBracket);
+            } else {
+                const regionOrderForYear = getRegionOrder();
+                const firstFourMappingForYear = getFirstFourMapping();
+                const newRegions = initializeBracket(selectedYear, bracketData, regionOrderForYear, firstFourMappingForYear);
+                setRegions(newRegions);
+                setBracketName('');
+                setSaved(false);
+                setPublished(false);
+                setIsModified(false);
+                setChampion(null);
+                setContributors([]);
+                setCurrentRegionName(firstRegionKey);
+                setRandomizedMatchup(newRegions[firstRegionKey]?.getCurrentMatchup() || null);
             }
         }
-
-        // Reset state for new bracket
-        setChampion(null);
-        setBracketName('');
-        setSaved(false);
-        setPublished(false);
-        setIsModified(false);
         setLoading(false);
-    };
+        isInitializing.current = false;
+    }, [user, selectedYear, genderPath, applyLoadedBracket, getBracketData, getRegionOrder, getFirstFourMapping, loadFromMemory, setRandomizedMatchup]);
 
-    // Get the current region object
-    const getCurrentRegion = (): Region | undefined => {
+    const handleCreateOtherGender = useCallback((): void => {
+        const newGender: GenderCode = selectedGender === 'M' ? 'W' : 'M';
+        setSelectedGender(newGender);
+    }, [selectedGender, setSelectedGender]);
+
+    // --- Interaction Handlers ---
+
+    const getCurrentRegion = useCallback((): Region | undefined => {
         return regions[currentRegionName];
-    };
+    }, [regions, currentRegionName]);
 
-    // Handle when user picks a winner
-    const selectWinner = (winner: Team): void => {
+    const selectWinner = useCallback((winner: Team): void => {
         const currentRegion = getCurrentRegion();
         if (!currentRegion) return;
 
-        // Record the selection
         currentRegion.selectWinner(winner);
 
-        // Get the next matchup (before triggering re-render)
         let nextMatchup: [Team, Team] | null = null;
         let nextRegionName = currentRegionName;
 
-        // Check if region is complete
         const regionChampion = currentRegion.getChampion();
         if (regionChampion) {
-            // Move to next region or final four
             const regionOrderList = [...(getRegionOrder() || []), 'final_four'];
-
-            // Add region champion to final four if not already final four
             if (currentRegionName !== 'final_four') {
                 const finalFour = regions.final_four;
-                // Define const idx based on the position of currentRegionName in regionOrder
-                const idx = regionOrderList.indexOf(currentRegionName);
-                if (finalFour) {
-                    finalFour.addTeam(regionChampion, idx);
-                }
+                const idx = (getRegionOrder() || []).indexOf(currentRegionName);
+                if (finalFour) finalFour.addTeam(regionChampion, idx);
             }
 
-            // Find next incomplete region
             let foundNext = false;
             for (const regionName of regionOrderList) {
                 const region = regions[regionName];
@@ -405,93 +284,56 @@ function WinnerSelection(): React.ReactElement {
             }
 
             if (!foundNext) {
-                // All regions complete - we have a champion!
                 setChampion(regions.final_four?.getChampion() || null);
             }
         } else {
-            // Get next matchup in current region
             nextMatchup = currentRegion.getCurrentMatchup() || null;
         }
 
-        // Update state
         const newRegions = { ...regions };
         setRegions(newRegions);
         setCurrentRegionName(nextRegionName);
         setRandomizedMatchup(nextMatchup);
         setSaved(false);
         setIsModified(true);
-
-        // Save to memory
         saveToMemory(newRegions, bracketName, nextRegionName, nextMatchup || []);
-    };
+    }, [regions, currentRegionName, getCurrentRegion, getRegionOrder, bracketName, saveToMemory, setRandomizedMatchup]);
 
-    // Get progress for a specific region
-    const getRegionProgress = (regionName: string): [number, number] => {
-        const region = regions[regionName];
-        if (!region) return [0, 0];
-        return region.getProgress();
-    };
-
-    // Switch to a specific region (for clicking progress boxes)
-    const switchToRegion = (regionName: string): void => {
+    const resetRegion = useCallback((regionName: string): void => {
         const region = regions[regionName];
         if (region) {
-            setCurrentRegionName(regionName);
-            // If the region is complete, we'll show the winner screen (which now has a reset button)
-            // If it's not complete, we show the current matchup
-            setRandomizedMatchup(region.getCurrentMatchup() || null);
-        }
-    };
-
-    // Reset a specific region to allow re-picking
-    const resetRegion = (regionName: string): void => {
-        const region = regions[regionName];
-        if (region) {
-            // Save current picks before resetting - MUST deep copy since reset() mutates in place
             const bracketSnapshot = JSON.parse(JSON.stringify(region.toDict().bracket));
-            setPreviousPicks(prev => ({
-                ...prev,
-                [regionName]: bracketSnapshot
-            }));
+            setPreviousPicks(prev => ({ ...prev, [regionName]: bracketSnapshot }));
 
-            region.reset(); // This mutates the bracket arrays in place
-
-            // If we reset a region, we definitely don't have a champion anymore
+            region.reset();
             setChampion(null);
             setSaved(false);
             setIsModified(true);
 
-            // If it's not final_four, we also need to clear that region's slot in final_four
             if (regionName !== 'final_four') {
                 const finalFour = regions.final_four;
-                const regionOrderList = getRegionOrder() || [];
-                const idx = regionOrderList.indexOf(regionName);
-                if (finalFour) {
-                    finalFour.clearSlot(idx); // We'll need a clearSlot method in Region class
-                }
+                const idx = (getRegionOrder() || []).indexOf(regionName);
+                if (finalFour) finalFour.clearSlot(idx);
             }
 
-            // Update state
             const newRegions = { ...regions };
             setRegions(newRegions);
             setCurrentRegionName(regionName);
             setRandomizedMatchup(region.getCurrentMatchup() || null);
         }
-    };
+    }, [regions, getRegionOrder, setRandomizedMatchup]);
 
-    // Get the current region's champion (if complete)
-    const getCurrentRegionChampion = (): Team | null => {
-        const region = getCurrentRegion();
-        return region?.getChampion() || null;
-    };
+    const switchToRegion = useCallback((regionName: string): void => {
+        const region = regions[regionName];
+        if (region) {
+            setCurrentRegionName(regionName);
+            setRandomizedMatchup(region.getCurrentMatchup() || null);
+        }
+    }, [regions, setRandomizedMatchup]);
 
-    /**
-     * Check if a team was the previously selected winner for the current matchup
-     */
-    const checkPreviousPick = (teamName: string): boolean => {
-        const region = getCurrentRegion();
+    const checkPreviousPick = useCallback((teamName: string): boolean => {
+        const region = regions[currentRegionName];
         const prevBracket = previousPicks[currentRegionName];
-
         if (!region || !prevBracket) return false;
 
         const roundIndex = region.roundIndex;
@@ -499,159 +341,149 @@ function WinnerSelection(): React.ReactElement {
         const nextRoundIndex = roundIndex + 1;
         const position = Math.floor(matchupIndex / 2);
 
-        // Check if prevBracket has this round and position
         if (prevBracket[nextRoundIndex] && prevBracket[nextRoundIndex][position]) {
-            const prevWinnerName = prevBracket[nextRoundIndex][position]?.name;
-            const match = prevWinnerName === teamName;
-            return match;
+            return prevBracket[nextRoundIndex][position]?.name === teamName;
         }
-
         return false;
-    };
+    }, [regions, currentRegionName, previousPicks]);
 
-    // Handle saving the bracket
-    const handleSaveBracket = async (): Promise<void> => {
+    const handleSaveBracket = useCallback(async (): Promise<void> => {
         if (!user) {
             safeNavigate('/login?redirect=/bracket/pick');
             return;
         }
-
         if (!bracketName.trim()) {
             alert('Please enter a bracket name');
             return;
         }
 
         try {
-            // If already published, update both the saved bracket AND the leaderboard entry
             if (published) {
                 await publishBracket(user, selectedYear, regions, bracketName, champion, genderPath, true);
             } else {
                 await saveBracket(user, selectedYear, regions, bracketName, false, genderPath);
             }
-
             setSaved(true);
             setIsModified(false);
-            alert('Bracket updated successfully!');
+            alert('Bracket saved successfully!');
         } catch (error) {
             console.error('Error saving bracket:', error);
-            alert('Failed to save bracket. Please try again.');
+            alert('Failed to save bracket.');
         }
-    };
+    }, [user, bracketName, published, selectedYear, regions, champion, genderPath, safeNavigate]);
 
-    // Handle publishing the bracket
-    const handlePublishBracket = async (): Promise<void> => {
-        if (!saved) {
-            await handleSaveBracket();
-        }
-
+    const handlePublishBracket = useCallback(async (): Promise<void> => {
+        if (!saved) await handleSaveBracket();
         try {
             await publishBracket(user!, selectedYear, regions, bracketName, champion, genderPath);
             setPublished(true);
-            alert('Bracket published to leaderboard!');
+            alert('Bracket published!');
             safeNavigate('/leaderboard');
         } catch (error) {
             console.error('Error publishing bracket:', error);
-            alert('Failed to publish bracket. Please try again.');
+            alert('Failed to publish.');
         }
-    };
+    }, [saved, handleSaveBracket, user, selectedYear, regions, bracketName, champion, genderPath, safeNavigate]);
 
-    // Handle adding a contributor to the bracket
-    const handleAddContributor = async (username: string): Promise<{ success: boolean; error?: string }> => {
-        if (!user) {
-            return { success: false, error: 'You must be logged in to add contributors.' };
-        }
-
+    const handleAddContributor = useCallback(async (username: string): Promise<{ success: boolean; error?: string }> => {
+        if (!user) return { success: false, error: 'Not logged in' };
         const result = await addContributor(user, username, selectedYear, genderPath);
-
         if (result.success) {
-            // Update local contributors list - use returned name (correct casing) or fallback to input
             setContributors(prev => [...prev, result.addedDisplayName || username]);
         }
-
         return result;
-    };
+    }, [user, selectedYear, genderPath]);
 
-    // Handle leaving a shared bracket (for secondary contributors)
-    const handleLeaveBracket = async (): Promise<void> => {
+    const handleLeaveBracket = useCallback(async (): Promise<void> => {
         if (!user || !ownerUid) return;
-
-        const confirmed = window.confirm(
-            'Are you sure you want to leave this bracket? You will no longer be listed as a contributor and will need to create your own bracket.'
-        );
-
-        if (!confirmed) return;
-
+        if (!window.confirm('Leave this bracket?')) return;
         const result = await leaveBracket(user, ownerUid, selectedYear, genderPath);
-
         if (result.success) {
-            alert('You have left this bracket. You can now create your own bracket.');
             setIsSecondaryOwner(false);
             setOwnerUid(null);
-            setContributors([]);
-            // Re-initialize to start fresh
-            initializeOrLoadBracket();
+            await initializeOrLoadBracket();
         } else {
-            alert(result.error || 'Failed to leave bracket. Please try again.');
+            alert(result.error);
         }
-    };
+    }, [user, ownerUid, selectedYear, genderPath, initializeOrLoadBracket]);
 
-    // Start editing picks again
-    const handleEditPicks = (): void => {
+    const handleDeleteBracket = useCallback(async (): Promise<void> => {
+        if (!user) return;
+        if (!window.confirm('Delete this bracket?')) return;
+        const result = await deleteBracket(user, selectedYear, genderPath);
+        if (result.success) {
+            saveTemporaryBracket(selectedYear, null, genderPath);
+            safeNavigate('/');
+        }
+    }, [user, selectedYear, genderPath, safeNavigate]);
+
+    const handleEditPicks = useCallback((): void => {
         setChampion(null);
-
-        // Populate previousPicks with current state of all regions before hiding champion view
-        // Deep copy to avoid mutation issues
         const currentPicks: PreviousPicksMap = {};
         Object.keys(regions).forEach(name => {
             currentPicks[name] = JSON.parse(JSON.stringify(regions[name].toDict().bracket));
         });
         setPreviousPicks(currentPicks);
+    }, [regions]);
 
-        // Just stay on current region or go to first region
-        const regionOrderList = getRegionOrder() || [];
-        if (!currentRegionName) {
-            setCurrentRegionName(regionOrderList[0]);
-        }
-    };
+    // --- Effects ---
 
-    // Handle deleting the bracket (primary owner only)
-    const handleDeleteBracket = async (): Promise<void> => {
-        if (!user) return;
-
-        const confirmed = window.confirm(
-            'Are you sure you want to delete this bracket? This action cannot be undone and will also remove your entry from the leaderboard.'
-        );
-
-        if (!confirmed) return;
-
-        const result = await deleteBracket(user, selectedYear, genderPath);
-
-        if (result.success) {
-            alert('Your bracket has been deleted.');
-            // Clear local state
-            saveTemporaryBracket(selectedYear, null, genderPath);
-            // Navigate to home
-            safeNavigate('/');
+    useEffect(() => {
+        if (hasUnsavedBracket) {
+            setBlocker(() => true, "Unsaved changes! Stay and save?");
         } else {
-            alert(result.error || 'Failed to delete bracket. Please try again.');
+            clearBlocker();
         }
-    };
+        return () => clearBlocker();
+    }, [hasUnsavedBracket, setBlocker, clearBlocker]);
 
-    // Loading state
-    if (loading) {
-        return (
-            <div className="winner-selection-container">
-                <p>Loading bracket...</p>
-            </div>
-        );
-    }
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasUnsavedBracket) {
+                e.preventDefault();
+                return e.returnValue = 'Unsaved changes!';
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedBracket]);
 
-    // No data for selected year
-    if (!hasBracketData()) {
-        return <ComingSoon year={selectedYear} selectionSundayTime={getSelectionSundayTime()} />;
-    }
+    useEffect(() => {
+        async function checkOtherGender() {
+            if (user && champion) {
+                const otherPath: Gender = selectedGender === 'W' ? 'men' : 'women';
+                try {
+                    const otherBracket = await loadBracket(user, selectedYear, otherPath);
+                    setHasOtherGenderBracket(!!otherBracket);
+                } catch (e) { console.error(e); }
+            }
+        }
+        checkOtherGender();
+    }, [user, champion, selectedYear, selectedGender]);
 
-    // Champion view - show when all picks are complete
+    useEffect(() => {
+        const init = async () => {
+            await Promise.resolve(); // Async tick to avoid synchronous setState linter error
+            isInitializing.current = false;
+            await initializeOrLoadBracket();
+            if (user) await checkFirebaseBracket();
+        };
+        init();
+    }, [user, initializeOrLoadBracket, checkFirebaseBracket]);
+
+    useEffect(() => {
+        const check = async () => {
+            await Promise.resolve();
+            if (user && !isInitializing.current) await checkFirebaseBracket();
+        };
+        check();
+    }, [user, checkFirebaseBracket]);
+
+    // --- Render logic ---
+
+    if (loading) return <div className="winner-selection-container"><p>Loading...</p></div>;
+    if (!hasBracketData()) return <ComingSoon year={selectedYear} selectionSundayTime={getSelectionSundayTime()} />;
+
     if (champion) {
         return (
             <>
@@ -691,130 +523,44 @@ function WinnerSelection(): React.ReactElement {
         );
     }
 
-    // Get current region champion for showing region winner state
-    const regionChamp = getCurrentRegionChampion();
+    const regionChamp = getCurrentRegion()?.getChampion() || null;
 
-    // Main matchup selection view
     return (
         <div className="winner-selection-container">
             <h2>Select Which Mascot You Like Best</h2>
+            {isPastCutoff() && <div className="cutoff-warning-banner">⚠️ Tournament started. Changes cannot be saved.</div>}
+            <p className="current-region">Region: <strong>{formatTeamName(currentRegionName)}</strong></p>
 
-            {/* Cutoff warning banner */}
-            {isPastCutoff() && (
-                <div className="cutoff-warning-banner">
-                    ⚠️ The tournament has started. Any changes you make cannot be saved or published.
-                </div>
-            )}
-
-            <p className="current-region">
-                Region: <strong>{formatTeamName(currentRegionName)}</strong>
-            </p>
-
-            {/* Show region winner if this region is complete */}
-            {regionChamp && (
+            {regionChamp ? (
                 <div className="region-winner-display">
                     <h3>🏆 {formatTeamName(currentRegionName)} Region Winner</h3>
-                    {regionChamp.image && (
-                        <RenderImageWithMagnifier
-                            src={regionChamp.image}
-                            alt={regionChamp.name}
-                            className="region-winner-image"
-                            onExpand={expandImage}
-                        />
-                    )}
+                    {regionChamp.image && <RenderImageWithMagnifier src={regionChamp.image} alt={regionChamp.name} className="region-winner-image" onExpand={expandImage} />}
                     <p className="mascot-name">{formatMascotName(regionChamp.name)}</p>
                     <p className="team-name">{formatTeamName(regionChamp.name)}</p>
-                    <button
-                        className="secondary-btn"
-                        onClick={() => resetRegion(currentRegionName)}
-                        style={{ marginTop: '20px', width: '100%' }}
-                    >
-                        Reset Picks for This Region
-                    </button>
+                    <button className="secondary-btn" onClick={() => resetRegion(currentRegionName)} style={{ marginTop: '20px', width: '100%' }}>Reset This Region</button>
                 </div>
-            )}
-
-            {/* Show matchup if region is not complete */}
-            {!regionChamp && currentMatchup.length === 2 && (
+            ) : currentMatchup.length === 2 && (
                 <div className="matchup">
-                    {currentMatchup.map((team, index) => {
-                        const isPlayIn = team.name.includes('_or_');
-                        const cardContent = isPlayIn ? (
-                            <SplitTeamCard
-                                key={team.name}
-                                team={team}
-                                onSelect={selectWinner}
-                                onExpandImage={expandImage}
-                                checkPreviousPick={checkPreviousPick}
-                            />
-                        ) : (
-                            <TeamCard
-                                key={team.name}
-                                team={team}
-                                onSelect={selectWinner}
-                                onExpandImage={expandImage}
-                                isPreviousPick={checkPreviousPick(team.name)}
-                            />
-                        );
-
-                        return (
-                            <Fragment key={team.name}>
-                                {cardContent}
-                                {index === 0 && <span className="vs">VS</span>}
-                            </Fragment>
-                        );
-                    })}
+                    {currentMatchup.map((team, index) => (
+                        <Fragment key={team.name}>
+                            {team.name.includes('_or_') ? (
+                                <SplitTeamCard team={team} onSelect={selectWinner} onExpandImage={expandImage} checkPreviousPick={checkPreviousPick} />
+                            ) : (
+                                <TeamCard team={team} onSelect={selectWinner} onExpandImage={expandImage} isPreviousPick={checkPreviousPick(team.name)} />
+                            )}
+                            {index === 0 && <span className="vs">VS</span>}
+                        </Fragment>
+                    ))}
                 </div>
             )}
 
-            {/* Play-In Game Info Box */}
-            {!regionChamp && currentMatchup.some(team => team.name.includes('_or_')) && (
-                (() => {
-                    const playInTeams = currentMatchup.filter(team => team.name.includes('_or_'));
-
-                    const cutoffDate = getCutoffTime();
-
-                    const timeString = cutoffDate ? cutoffDate.toLocaleString('en-US', {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        timeZoneName: 'short'
-                    }) : 'the start of the Round of 64';
-
-                    return (
-                        <div className="play-in-info">
-                            {playInTeams.map(team => {
-                                const subTeams = team.name.split('_or_').map(name => formatTeamName(name));
-                                return (
-                                    <p key={team.name}>
-                                        <strong>{subTeams[0]}</strong> and <strong>{subTeams[1]}</strong> will compete for their spot in the tournament in a play-in game prior to the beginning of the Round of 64.
-                                    </p>
-                                );
-                            })}
-                            <p>
-                                When the winner of the play-in game is known, this website will be updated and you will only see one team here.
-                            </p>
-                            <p className="cutoff-note">
-                                Please fill out the bracket assuming one of the two teams wins the play-in game and feel free to come back later and edit your bracket if you are wrong.
-                                Note that editing is only allowed until <strong>{timeString}</strong>.
-                            </p>
-                        </div>
-                    );
-                })()
-            )}
-
-            {/* Progress for each region - clickable to switch */}
             <RegionProgress
                 regionNames={[...(getRegionOrder() || []), 'final_four']}
                 regions={regions}
                 currentRegionName={currentRegionName}
-                getRegionProgress={getRegionProgress}
+                getRegionProgress={(name) => regions[name]?.getProgress() || [0, 0]}
                 onSwitchRegion={switchToRegion}
             />
-
-            {/* Expanded Image Modal */}
             <ImageModal src={expandedImage} onClose={closeImage} />
         </div>
     );

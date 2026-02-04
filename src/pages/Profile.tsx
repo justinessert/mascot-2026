@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTournament } from '../hooks/useTournament';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTitle } from '../hooks/useTitle';
 import { getUserBracketHistory, BracketHistoryEntry } from '../services/bracketService';
 import HistoryTable from '../components/HistoryTable';
 import { mensTournaments, womensTournaments } from '../constants/bracketData';
@@ -9,6 +10,7 @@ import type { Gender, GenderCode, TournamentConfig } from '../types/bracket';
 import './Profile.css';
 
 function Profile(): React.ReactElement {
+    useTitle('Profile');
     const { user, logout } = useAuth();
     const { setSelectedYear, setSelectedGender } = useTournament();
     const navigate = useNavigate();
@@ -16,13 +18,8 @@ function Profile(): React.ReactElement {
     const [womenHistory, setWomenHistory] = useState<BracketHistoryEntry[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
 
-    useEffect(() => {
-        if (user) {
-            loadHistory();
-        }
-    }, [user]);
-
-    const loadHistory = async (): Promise<void> => {
+    const loadHistory = useCallback(async (): Promise<void> => {
+        if (!user) return; // Added check for user
         setLoading(true);
         try {
             const [menData, womenData] = await Promise.all([
@@ -35,7 +32,17 @@ function Profile(): React.ReactElement {
             console.error('Error loading history:', error);
         }
         setLoading(false);
-    };
+    }, [user]); // Dependency array for useCallback
+
+    useEffect(() => {
+        const load = async () => {
+            await Promise.resolve(); // "Tick trick"
+            if (user) {
+                await loadHistory();
+            }
+        };
+        load();
+    }, [user, loadHistory]); // Added loadHistory to dependencies
 
     const handleLogout = async (): Promise<void> => {
         try {

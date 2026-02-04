@@ -36,11 +36,11 @@ function getTournamentConfig(year: number, gender: Gender): TournamentConfig | u
 // Key format: `${gender}_${year}`
 const tempBracketStorage: Record<string, unknown> = {};
 
-interface TemporaryBracketData {
-    regions: Record<string, RegionData>;
+export interface TemporaryBracketData {
+    regions: Record<string, RegionData | null>;
     bracketName: string;
     currentRegionName: string;
-    currentMatchup: TeamData[];
+    currentMatchup: (TeamData | null)[];
 }
 
 export function saveTemporaryBracket(year: number, data: TemporaryBracketData | null, gender: Gender = 'men'): void {

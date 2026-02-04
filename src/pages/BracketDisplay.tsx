@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom';
+import { useTitle } from '../hooks/useTitle';
 
 /**
  * Bracket Display page component (placeholder)
@@ -6,6 +7,7 @@ import { useParams } from 'react-router-dom';
  */
 function BracketDisplay(): React.ReactElement {
     const { region } = useParams<{ region: string }>();
+    useTitle(`${region ? region.charAt(0).toUpperCase() + region.slice(1) : ''} Region`);
 
     return (
         <div className="page-container">

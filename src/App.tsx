@@ -18,9 +18,18 @@ import Profile from './pages/Profile';
 
 import './App.css';
 
+import { usePageTracking } from './hooks/usePageTracking';
+
+// Component to handle page view tracking
+function PageTracker() {
+    usePageTracking();
+    return null;
+}
+
 function App(): React.ReactElement {
     return (
         <BrowserRouter>
+            <PageTracker />
             <NavigationBlockerProvider>
                 <Routes>
                     <Route path="/" element={<Layout />}>

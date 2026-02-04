@@ -13,8 +13,22 @@ import { firebaseConfig } from '../config/firebase.config';
 const app: FirebaseApp = initializeApp(firebaseConfig);
 
 // Initialize and export Firebase services
+// Initialize and export Firebase services
 export const auth: Auth = getAuth(app);
 export const db: Firestore = getFirestore(app);
 export const functions: Functions = getFunctions(app);
+
+// Initialize Analytics conditionally to avoid errors in environments without window/indexedDB
+import { getAnalytics, Analytics, isSupported } from 'firebase/analytics';
+
+let analytics: Analytics | null = null;
+
+isSupported().then(supported => {
+    if (supported) {
+        analytics = getAnalytics(app);
+    }
+});
+
+export { analytics };
 
 export default app;

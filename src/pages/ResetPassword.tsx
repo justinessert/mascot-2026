@@ -10,12 +10,14 @@
 
 import { useState, useEffect, FormEvent, ChangeEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTitle } from '../hooks/useTitle';
 import { confirmPasswordReset, verifyPasswordResetCode, AuthError } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import PasswordInput from '../components/PasswordInput';
 import './Auth.css';
 
 function ResetPassword(): React.ReactElement {
+    useTitle('Reset Password');
     // useSearchParams hook to read URL query parameters
     // This is how we get the oobCode from the reset link
     const [searchParams] = useSearchParams();

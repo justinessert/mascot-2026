@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { loadBracket } from '../services/bracketService';
 import HowItWorks from '../components/HowItWorks';
 import type { Gender } from '../types/bracket';
+import { useTitle } from '../hooks/useTitle';
 import './Home.css';
 
 /**
@@ -12,6 +13,7 @@ import './Home.css';
  * Entry point for the application
  */
 function Home(): React.ReactElement {
+    useTitle('Home');
     const { selectedYear, selectedGender } = useTournament();
     const { user } = useAuth();
     const [hasBracket, setHasBracket] = useState<boolean>(false);

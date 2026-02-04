@@ -6,8 +6,9 @@
  * Does NOT affect the current user's picks or session storage.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTitle } from '../hooks/useTitle';
 import { loadBracketByUserId, leaveBracket, deleteBracket, Region } from '../services/bracketService';
 import { loadCorrectBracket, CorrectBracket } from '../services/correctBracketService';
 import { mensTournaments, womensTournaments } from '../constants/bracketData';
@@ -34,6 +35,8 @@ function BracketView(): React.ReactElement {
     const [loading, setLoading] = useState<boolean>(true);
     const [bracketName, setBracketName] = useState<string>('');
     const [userName, setUserName] = useState<string>('');
+
+    useTitle(bracketName ? `${bracketName}` : 'View Bracket');
     const [contributors, setContributors] = useState<string[]>([]);
     const [contributorUids, setContributorUids] = useState<string[]>([]);
     const [ownerUid, setOwnerUid] = useState<string | null>(null);
@@ -52,13 +55,7 @@ function BracketView(): React.ReactElement {
     // Check if current user is the owner of this bracket
     const isOwner = user && ownerUid && user.uid === ownerUid;
 
-    // Load the shared bracket and correct bracket on mount
-    useEffect(() => {
-        loadSharedBracket();
-        loadCorrectBracket(numericYear, genderPath).then(setCorrectBracket);
-    }, [year, uuid, gender]);
-
-    const loadSharedBracket = async (): Promise<void> => {
+    const loadSharedBracket = useCallback(async (): Promise<void> => {
         setLoading(true);
         setError(null);
 
@@ -80,7 +77,18 @@ function BracketView(): React.ReactElement {
         }
 
         setLoading(false);
-    };
+    }, [uuid, numericYear, genderPath]);
+
+    // Load the shared bracket and correct bracket on mount
+    useEffect(() => {
+        const loadAll = async () => {
+            await Promise.resolve(); // Async tick
+            await loadSharedBracket();
+            const correct = await loadCorrectBracket(numericYear, genderPath);
+            setCorrectBracket(correct);
+        }
+        loadAll();
+    }, [loadSharedBracket, numericYear, genderPath]);
 
     // Handle leaving this bracket
     const handleLeaveBracket = async (): Promise<void> => {

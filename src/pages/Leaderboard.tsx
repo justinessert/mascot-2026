@@ -22,6 +22,8 @@ import {
     hasPublishedBracket,
     getCustomLeaderboard,
     getUserCustomLeaderboards,
+    leaveCustomLeaderboard,
+    deleteCustomLeaderboard,
     CustomLeaderboardMeta,
 } from '../services/leaderboardService';
 import CreateOtherBracketPrompt from '../components/CreateOtherBracketPrompt';
@@ -80,7 +82,7 @@ function Leaderboard(): React.ReactElement {
 
     // Tooltip state for disabled buttons
     const [showCreateTooltip, setShowCreateTooltip] = useState<boolean>(false);
-    const [showJoinTooltip, setShowJoinTooltip] = useState<boolean>(false);
+
 
     // Check if we're past the cutoff time (can view all brackets)
     const isPastCutoff = useCallback((): boolean => {
@@ -285,12 +287,7 @@ function Leaderboard(): React.ReactElement {
             return;
         }
 
-        if (userIsMember) {
-            // Already a member - show tooltip
-            setShowJoinTooltip(true);
-            setTimeout(() => setShowJoinTooltip(false), 2000);
-            return;
-        }
+
 
         // Check if leaderboard has password
         if (selectedLeaderboardMeta?.hasPassword) {
@@ -323,6 +320,49 @@ function Leaderboard(): React.ReactElement {
         return result;
     };
 
+    // Handle leave leaderboard
+    const handleLeaveLeaderboard = async (): Promise<void> => {
+        if (!user || !selectedLeaderboardId) return;
+
+        if (!window.confirm('Are you sure you want to leave this leaderboard?')) {
+            return;
+        }
+
+        const result = await leaveCustomLeaderboard(user, selectedLeaderboardId, selectedYear, genderPath);
+
+        if (result.success) {
+            setUserIsMember(false);
+            await loadLeaderboard();
+            const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
+            setCustomLeaderboards(leaderboards);
+            // Optional: Switch to global if they leave? Or stay and show "Join"?
+            // Staying and showing "Join" is fine.
+        } else {
+            alert(result.error || 'Failed to leave leaderboard');
+        }
+    };
+
+    // Handle delete leaderboard
+    const handleDeleteLeaderboard = async (): Promise<void> => {
+        if (!user || !selectedLeaderboardId) return;
+
+        if (!window.confirm('Are you sure you want to delete this leaderboard? This action cannot be undone.')) {
+            return;
+        }
+
+        const result = await deleteCustomLeaderboard(user, selectedLeaderboardId, selectedYear, genderPath);
+
+        if (result.success) {
+            // Reset to global
+            setSelectedLeaderboardId(null);
+            // Refresh list
+            const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
+            setCustomLeaderboards(leaderboards);
+        } else {
+            alert(result.error || 'Failed to delete leaderboard');
+        }
+    };
+
     // Handle dismissing the custom leaderboard prompt
     const dismissCustomLbPrompt = (): void => {
         setShowCustomLbPrompt(false);
@@ -352,7 +392,11 @@ function Leaderboard(): React.ReactElement {
 
     const canCreate = user && userHasPublished;
 
-    const canJoin = user && selectedLeaderboardId !== null && !userIsMember;
+    const canJoin = user && userHasPublished && selectedLeaderboardId !== null && !userIsMember;
+
+    const canLeave = user && selectedLeaderboardId !== null && userIsMember;
+
+    const canDelete = user && selectedLeaderboardId !== null && selectedLeaderboardMeta?.creatorId === user.uid;
 
     // Show coming soon if no bracket data for this year
     if (!hasBracketData()) {
@@ -409,7 +453,7 @@ function Leaderboard(): React.ReactElement {
                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                 <line x1="5" y1="12" x2="19" y2="12"></line>
                             </svg>
-                            Create
+                            Create Leaderboard
                         </button>
                         {showCreateTooltip && (
                             <div className="action-tooltip">
@@ -418,26 +462,53 @@ function Leaderboard(): React.ReactElement {
                         )}
                     </div>
 
-                    <div className="action-button-wrapper">
-                        <button
-                            className={`action-btn ${!canJoin ? 'disabled' : ''}`}
-                            onClick={handleJoinClick}
-                            disabled={!canJoin}
-                        >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="8.5" cy="7" r="4"></circle>
-                                <line x1="20" y1="8" x2="20" y2="14"></line>
-                                <line x1="23" y1="11" x2="17" y2="11"></line>
-                            </svg>
-                            Join
-                        </button>
-                        {showJoinTooltip && (
-                            <div className="action-tooltip">
-                                You've already joined this leaderboard
-                            </div>
-                        )}
-                    </div>
+                    {canJoin && (
+                        <div className="action-button-wrapper">
+                            <button
+                                className="action-btn"
+                                onClick={handleJoinClick}
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="8.5" cy="7" r="4"></circle>
+                                    <line x1="20" y1="8" x2="20" y2="14"></line>
+                                    <line x1="23" y1="11" x2="17" y2="11"></line>
+                                </svg>
+                                Join
+                            </button>
+                        </div>
+                    )}
+
+                    {canLeave && (
+                        <div className="action-button-wrapper">
+                            <button
+                                className="action-btn danger-btn"
+                                onClick={handleLeaveLeaderboard}
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                    <polyline points="16 17 21 12 16 7"></polyline>
+                                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                                </svg>
+                                Leave
+                            </button>
+                        </div>
+                    )}
+
+                    {canDelete && (
+                        <div className="action-button-wrapper">
+                            <button
+                                className="action-btn danger-btn"
+                                onClick={handleDeleteLeaderboard}
+                                title="Delete Leaderboard"
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 

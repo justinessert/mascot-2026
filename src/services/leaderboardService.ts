@@ -14,6 +14,8 @@ import {
     documentId,
     DocumentData,
     arrayUnion,
+    arrayRemove,
+    deleteDoc,
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { db } from './firebase';
@@ -275,6 +277,67 @@ export async function joinCustomLeaderboard(
     await setDoc(docRef, {
         memberIds: arrayUnion(user.uid)
     }, { merge: true });
+
+    return { success: true };
+}
+
+/**
+ * Leave a custom leaderboard
+ */
+export async function leaveCustomLeaderboard(
+    user: User,
+    leaderboardId: string,
+    year: number,
+    gender: Gender = 'men'
+): Promise<{ success: boolean; error?: string }> {
+    if (!user) {
+        return { success: false, error: 'User not authenticated' };
+    }
+
+    // Check if member
+    const leaderboard = await getCustomLeaderboard(leaderboardId, year, gender);
+    if (!leaderboard) {
+        return { success: false, error: 'Leaderboard not found' };
+    }
+
+    if (!leaderboard.memberIds.includes(user.uid)) {
+        return { success: false, error: 'Not a member of this leaderboard' };
+    }
+
+    // Remove user from memberIds
+    const docRef = doc(db, getCustomLeaderboardsPath(gender, year), leaderboardId);
+    await setDoc(docRef, {
+        memberIds: arrayRemove(user.uid)
+    }, { merge: true });
+
+    return { success: true };
+}
+
+/**
+ * Delete a custom leaderboard
+ * Only the creator can delete it
+ */
+export async function deleteCustomLeaderboard(
+    user: User,
+    leaderboardId: string,
+    year: number,
+    gender: Gender = 'men'
+): Promise<{ success: boolean; error?: string }> {
+    if (!user) {
+        return { success: false, error: 'User not authenticated' };
+    }
+
+    const leaderboard = await getCustomLeaderboard(leaderboardId, year, gender);
+    if (!leaderboard) {
+        return { success: false, error: 'Leaderboard not found' };
+    }
+
+    if (leaderboard.creatorId !== user.uid) {
+        return { success: false, error: 'Only the creator can delete this leaderboard' };
+    }
+
+    const docRef = doc(db, getCustomLeaderboardsPath(gender, year), leaderboardId);
+    await deleteDoc(docRef);
 
     return { success: true };
 }

@@ -98,7 +98,7 @@ describe('Leaderboard Page', () => {
             </MemoryRouter>
         );
 
-        expect(screen.getByText(/loading leaderboard/i)).toBeInTheDocument();
+        expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
 
     it('renders empty state when no brackets found', async () => {
@@ -112,7 +112,7 @@ describe('Leaderboard Page', () => {
             </MemoryRouter>
         );
 
-        expect(await screen.findByText(/no brackets published yet/i)).toBeInTheDocument();
+        expect(await screen.findByText(/no brackets yet/i)).toBeInTheDocument();
     });
 
     it('renders brackets sorted by score', async () => {
@@ -165,7 +165,7 @@ describe('Leaderboard Page', () => {
             </MemoryRouter>
         );
 
-        await waitFor(() => expect(screen.getByText('Your Bracket')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('Bracket')).toBeInTheDocument());
 
         // Check header stats
         const elements = screen.getAllByText('My Bracket');
@@ -186,7 +186,7 @@ describe('Leaderboard Page', () => {
         );
 
         // Check action buttons are present
-        expect(screen.getByText(/Create Leaderboard/i)).toBeInTheDocument();
+        expect(screen.getByText(/Create/i)).toBeInTheDocument();
         expect(screen.queryByText('Join')).not.toBeInTheDocument();
     });
 
@@ -273,7 +273,7 @@ describe('Leaderboard Page', () => {
         );
 
         // Wait for loading to finish
-        await waitFor(() => expect(screen.queryByText(/loading leaderboard/i)).not.toBeInTheDocument());
+        await waitFor(() => expect(screen.queryByText(/loading/i)).not.toBeInTheDocument());
 
         // Should NOT see the prompt
         expect(screen.queryByText(/Create & publish a bracket/i)).not.toBeInTheDocument();

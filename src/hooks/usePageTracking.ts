@@ -11,12 +11,14 @@ export const usePageTracking = () => {
 
     useEffect(() => {
         // Delay slightly to allow the page component's useTitle to update document.title
+        // Increased to 200ms to be safer
         const timeoutId = setTimeout(() => {
             logAnalyticsEvent('page_view', {
+                page_location: window.location.href,
                 page_path: location.pathname + location.search,
                 page_title: document.title
             });
-        }, 100);
+        }, 200);
 
         return () => clearTimeout(timeoutId);
     }, [location]);

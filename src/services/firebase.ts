@@ -22,13 +22,14 @@ export const functions: Functions = getFunctions(app);
 import { getAnalytics, Analytics, isSupported } from 'firebase/analytics';
 
 let analytics: Analytics | null = null;
-
-isSupported().then(supported => {
+const analyticsReady = isSupported().then(supported => {
     if (supported) {
         analytics = getAnalytics(app);
+        return analytics;
     }
+    return null;
 });
 
-export { analytics };
+export { analytics, analyticsReady };
 
 export default app;

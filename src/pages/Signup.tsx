@@ -68,6 +68,9 @@ function Signup(): React.ReactElement {
                 case 'auth/weak-password':
                     setError('Password is too weak');
                     break;
+                case 'auth/username-taken':
+                    setError('This username is already taken. Please choose another.');
+                    break;
                 default:
                     setError('Failed to create account. Please try again.');
             }

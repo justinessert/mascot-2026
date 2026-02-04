@@ -564,8 +564,8 @@ function WinnerSelection(): React.ReactElement {
         const result = await addContributor(user, username, selectedYear, genderPath);
 
         if (result.success) {
-            // Update local contributors list
-            setContributors(prev => [...prev, username]);
+            // Update local contributors list - use returned name (correct casing) or fallback to input
+            setContributors(prev => [...prev, result.addedDisplayName || username]);
         }
 
         return result;

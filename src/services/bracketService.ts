@@ -565,20 +565,133 @@ export interface UserLookupResult {
  * Look up a user by their display name in the users collection
  * Returns null if user not found
  */
+/**
+ * Look up a user by their display name in the users collection
+ * Returns null if user not found
+ * 
+ * Strategy:
+ * 1. Try normalized search (ignores case, spaces, symbols) - works for updated users
+ * 2. Try exact/lowercase match - legacy fallbacks
+ * 3. Try permutation search - finding legacy users with separators in names
+ */
 export async function lookupUserByDisplayName(displayName: string): Promise<UserLookupResult | null> {
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('displayName', '==', displayName));
-    const snapshot = await getDocs(q);
+    const normalizedInput = displayName.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    if (snapshot.empty) {
-        return null;
+    // 1. Primary Method: Normalized Match (fastest & most accurate for updated users)
+    // Matches "John-Doe", "john doe", "John_Doe" -> "johndoe"
+    const qNorm = query(usersRef, where('normalizedDisplayName', '==', normalizedInput));
+    const snapNorm = await getDocs(qNorm);
+
+    if (!snapNorm.empty) {
+        const userDoc = snapNorm.docs[0];
+        return {
+            uid: userDoc.id,
+            displayName: userDoc.data().displayName
+        };
     }
 
-    const userDoc = snapshot.docs[0];
-    return {
-        uid: userDoc.id,
-        displayName: userDoc.data().displayName
-    };
+    // 2. Legacy Method: Normalized Input vs Legacy Lowercase Field
+    // If input is "jol-ly", normalized is "jolly".
+    // Try to find a legacy user with displayNameLower == "jolly" (e.g. "Jolly" or "jolly")
+    // This allows finding simple names even if the user types separators.
+    if (normalizedInput.length > 0) {
+        const qLegacyNorm = query(usersRef, where('displayNameLower', '==', normalizedInput));
+        const snapLegacyNorm = await getDocs(qLegacyNorm);
+
+        if (!snapLegacyNorm.empty) {
+            return { uid: snapLegacyNorm.docs[0].id, displayName: snapLegacyNorm.docs[0].data().displayName };
+        }
+    }
+
+    // 3. Secondary Method: Lowercase Match (for users who have logged in but maybe normalization is weird)
+    const qLower = query(usersRef, where('displayNameLower', '==', displayName.toLowerCase()));
+    const snapLower = await getDocs(qLower);
+
+    if (!snapLower.empty) {
+        const userDoc = snapLower.docs[0];
+        return {
+            uid: userDoc.id,
+            displayName: userDoc.data().displayName
+        };
+    }
+
+    // 4. Legacy Method: Exact Match
+    const qExact = query(usersRef, where('displayName', '==', displayName));
+    const snapExact = await getDocs(qExact);
+    if (!snapExact.empty) {
+        return { uid: snapExact.docs[0].id, displayName: snapExact.docs[0].data().displayName };
+    }
+
+    // 5. Deep Legacy Search: Permutations
+    // If we couldn't find them by normalized name, they haven't logged in recently.
+    // We try to reconstruct their potential legacy display name by swapping separators.
+
+    // Split by any common separator (space, dash, underscore)
+    // Note: split() can return empty strings if separators are adjacent, filter them out
+    const parts = displayName.split(/[\s\-_]+/).filter(p => p.length > 0);
+
+    if (parts.length > 1) {
+        // Generate variations
+        const separators = ['', ' ', '-', '_']; // Added '' to join without separators (e.g. "jol-ly" -> "jolly")
+        const variations = new Set<string>();
+
+        // 5a. Lowercase variations (Target: displayNameLower)
+        // e.g. "Mary-Jane" -> "maryjane", "mary jane", "mary-jane", "mary_jane"
+        separators.forEach(sep => variations.add(parts.join(sep).toLowerCase()));
+
+        // Execute queries for lowercase variations (most likely to succeed for legacy users)
+        const variationList = Array.from(variations).slice(0, 10);
+        const queries = variationList.map(variant => getDocs(query(usersRef, where('displayNameLower', '==', variant))));
+
+        const results = await Promise.all(queries);
+        const match = results.find(snap => !snap.empty);
+
+        if (match) {
+            return { uid: match.docs[0].id, displayName: match.docs[0].data().displayName };
+        }
+
+        // 5b. Title/Original Case variations (Target: displayName) - Deepest Fallback
+        // Only needed if they have NO displayNameLower field (very old records)
+        const titleVariations = new Set<string>();
+
+        // Title Case parts: "Mary", "Jane"
+        const titleParts = parts.map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+
+        separators.forEach(sep => {
+            titleVariations.add(titleParts.join(sep)); // "MaryJane", "Mary Jane"...
+            titleVariations.add(parts.join(sep));      // Original casing re-joined
+        });
+
+        const deepQueries = Array.from(titleVariations).slice(0, 10).map(variant => {
+            return getDocs(query(usersRef, where('displayName', '==', variant)));
+        });
+
+        const deepResults = await Promise.all(deepQueries);
+        const deepMatch = deepResults.find(snap => !snap.empty);
+
+        if (deepMatch) {
+            return { uid: deepMatch.docs[0].id, displayName: deepMatch.docs[0].data().displayName };
+        }
+
+    } else {
+        // Single word name fallback - try Title Case
+        // e.g. input "john" -> try "John"
+        if (displayName.toLowerCase() !== displayName) {
+            // Input has caps, but exact match failed. Try all lowercase?
+            const qLc = query(usersRef, where('displayName', '==', displayName.toLowerCase()));
+            const snapLc = await getDocs(qLc);
+            if (!snapLc.empty) return { uid: snapLc.docs[0].id, displayName: snapLc.docs[0].data().displayName };
+        }
+
+        // Input is lowercase, try Title Case
+        const titleCase = displayName.charAt(0).toUpperCase() + displayName.slice(1).toLowerCase();
+        const qTitle = query(usersRef, where('displayName', '==', titleCase));
+        const snapTitle = await getDocs(qTitle);
+        if (!snapTitle.empty) return { uid: snapTitle.docs[0].id, displayName: snapTitle.docs[0].data().displayName };
+    }
+
+    return null;
 }
 
 /**
@@ -587,6 +700,7 @@ export async function lookupUserByDisplayName(displayName: string): Promise<User
 export interface AddContributorResult {
     success: boolean;
     error?: string;
+    addedDisplayName?: string;
 }
 
 /**
@@ -626,7 +740,7 @@ export async function addContributor(
 
     // 4. Check if contributor is already added
     if (existingContributorUids.includes(contributor.uid)) {
-        return { success: false, error: `${contributorDisplayName} is already a contributor to this bracket.` };
+        return { success: false, error: `${contributor.displayName} is already a contributor to this bracket.` };
     }
 
     // 5. Check if contributor has already published their own bracket for this tournament
@@ -634,23 +748,23 @@ export async function addContributor(
     const contributorLeaderboardSnapshot = await getDoc(contributorLeaderboardRef);
 
     if (contributorLeaderboardSnapshot.exists()) {
-        return { success: false, error: `${contributorDisplayName} has already published their own bracket for this tournament.` };
+        return { success: false, error: `${contributor.displayName} has already published their own bracket for this tournament.` };
     }
 
     // 6. Add contributor to bracket document
     await updateDoc(bracketRef, {
-        contributors: arrayUnion(contributorDisplayName),
+        contributors: arrayUnion(contributor.displayName),
         contributorUids: arrayUnion(contributor.uid)
     });
 
     // 7. Add contributor to leaderboard entry
     const leaderboardRef: DocumentReference = doc(db, `leaderboard/${gender}/years/${year}/entries/${ownerUser.uid}`);
     await updateDoc(leaderboardRef, {
-        contributors: arrayUnion(contributorDisplayName),
+        contributors: arrayUnion(contributor.displayName),
         contributorUids: arrayUnion(contributor.uid)
     });
 
-    return { success: true };
+    return { success: true, addedDisplayName: contributor.displayName };
 }
 
 /**

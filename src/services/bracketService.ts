@@ -389,6 +389,18 @@ export async function loadBracket(user: User | null, year: number, gender: Gende
     return null;
 }
 
+/**
+ * Check if user has a saved bracket (saved or published) for the given year/gender
+ * Lightweight check - only tests document existence without loading full data
+ */
+export async function hasSavedBracket(user: User | null, year: number, gender: Gender = 'men'): Promise<boolean> {
+    if (!user) return false;
+
+    const userBracketRef: DocumentReference = doc(db, `brackets/${gender}/years/${year}/users/${user.uid}`);
+    const snapshot = await getDoc(userBracketRef);
+    return snapshot.exists();
+}
+
 interface LoadedBracketByUserId {
     regions: Record<string, Region>;
     name: string;

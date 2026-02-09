@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTitle } from '../hooks/useTitle';
-import { loadBracketByUserId, leaveBracket, deleteBracket, Region } from '../services/bracketService';
+import { loadBracketByUserId, leaveBracket, deleteBracket, Region, hasSavedBracket } from '../services/bracketService';
 import { loadCorrectBracket, CorrectBracket } from '../services/correctBracketService';
 import { mensTournaments, womensTournaments } from '../constants/bracketData';
 import { useAuth } from '../hooks/useAuth';
@@ -43,6 +43,7 @@ function BracketView(): React.ReactElement {
     const [ownerUid, setOwnerUid] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [correctBracket, setCorrectBracket] = useState<CorrectBracket | null>(null);
+    const [userHasBracket, setUserHasBracket] = useState<boolean>(false);
 
     // Determine back link destination
     const locationState = location.state as LocationState | null;
@@ -69,7 +70,7 @@ function BracketView(): React.ReactElement {
                 setContributors(bracket.contributors || []);
                 setContributorUids(bracket.contributorUids || []);
                 setOwnerUid(bracket.ownerUid || uuid || null);
-                logAnalyticsEvent('view_shared_bracket', { tournament_year: numericYear, gender: genderPath });
+                logAnalyticsEvent('view_shared_bracket', { tournament_year: numericYear, gender: genderPath, has_saved_bracket: userHasBracket });
             } else {
                 setError('Bracket not found');
             }
@@ -79,18 +80,20 @@ function BracketView(): React.ReactElement {
         }
 
         setLoading(false);
-    }, [uuid, numericYear, genderPath]);
+    }, [uuid, numericYear, genderPath, userHasBracket]);
 
-    // Load the shared bracket and correct bracket on mount
+    // Load the shared bracket, correct bracket, and check user bracket status on mount
     useEffect(() => {
         const loadAll = async () => {
             await Promise.resolve(); // Async tick
             await loadSharedBracket();
             const correct = await loadCorrectBracket(numericYear, genderPath);
             setCorrectBracket(correct);
+            const hasBracket = await hasSavedBracket(user, numericYear, genderPath);
+            setUserHasBracket(hasBracket);
         }
         loadAll();
-    }, [loadSharedBracket, numericYear, genderPath]);
+    }, [loadSharedBracket, numericYear, genderPath, user]);
 
     // Handle leaving this bracket
     const handleLeaveBracket = async (): Promise<void> => {

@@ -14,7 +14,7 @@ import { db } from '../services/firebase';
 import { useTitle } from '../hooks/useTitle';
 import { useTournament } from '../hooks/useTournament';
 import { useAuth } from '../hooks/useAuth';
-import { Team } from '../services/bracketService';
+import { Team, hasSavedBracket } from '../services/bracketService';
 import {
     getAllCustomLeaderboardMeta,
     getCustomLeaderboardEntries,
@@ -72,6 +72,7 @@ function Leaderboard(): React.ReactElement {
 
     // User state
     const [userHasPublished, setUserHasPublished] = useState<boolean>(false);
+    const [userHasBracket, setUserHasBracket] = useState<boolean>(false);
     const [userIsMember, setUserIsMember] = useState<boolean>(false);
     const [userCustomLeaderboards, setUserCustomLeaderboards] = useState<CustomLeaderboardMeta[]>([]);
     const [showCustomLbPrompt, setShowCustomLbPrompt] = useState<boolean>(true);
@@ -176,14 +177,14 @@ function Leaderboard(): React.ReactElement {
         const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
         setCustomLeaderboards(leaderboards);
         setSelectedLeaderboardId(leaderboardId);
-        logAnalyticsEvent('create_custom_leaderboard', { tournament_year: selectedYear, leaderboard_name: name, has_password: !!password, gender: genderPath });
+        logAnalyticsEvent('create_custom_leaderboard', { tournament_year: selectedYear, leaderboard_name: name, has_password: !!password, gender: genderPath, has_saved_bracket: userHasBracket });
     };
 
     const handleJoinLeaderboard = async (password: string): Promise<{ success: boolean; error?: string }> => {
         if (!user || !selectedLeaderboardId) return { success: false, error: 'Initialization error' };
         const result = await joinCustomLeaderboard(user, selectedLeaderboardId, selectedYear, password, genderPath);
         if (result.success) {
-            logAnalyticsEvent('join_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath, leaderboard_name: selectedLeaderboardMeta?.name || '' });
+            logAnalyticsEvent('join_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath, leaderboard_name: selectedLeaderboardMeta?.name || '', has_saved_bracket: userHasBracket });
             setUserIsMember(true);
             await loadLeaderboard();
             const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
@@ -197,7 +198,7 @@ function Leaderboard(): React.ReactElement {
         if (!window.confirm('Leave this leaderboard?')) return;
         const result = await leaveCustomLeaderboard(user, selectedLeaderboardId, selectedYear, genderPath);
         if (result.success) {
-            logAnalyticsEvent('leave_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath, leaderboard_name: selectedLeaderboardMeta?.name || '' });
+            logAnalyticsEvent('leave_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath, leaderboard_name: selectedLeaderboardMeta?.name || '', has_saved_bracket: userHasBracket });
             setUserIsMember(false);
             await loadLeaderboard();
             const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
@@ -210,7 +211,7 @@ function Leaderboard(): React.ReactElement {
         if (!window.confirm('Delete this leaderboard?')) return;
         const result = await deleteCustomLeaderboard(user, selectedLeaderboardId, selectedYear, genderPath);
         if (result.success) {
-            logAnalyticsEvent('delete_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath, leaderboard_name: selectedLeaderboardMeta?.name || '' });
+            logAnalyticsEvent('delete_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath, leaderboard_name: selectedLeaderboardMeta?.name || '', has_saved_bracket: userHasBracket });
             setSelectedLeaderboardId(null);
             const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
             setCustomLeaderboards(leaderboards);
@@ -265,15 +266,18 @@ function Leaderboard(): React.ReactElement {
     useEffect(() => {
         const checkStatus = async () => {
             if (user) {
-                const [published, userLbs] = await Promise.all([
+                const [published, userLbs, hasBracket] = await Promise.all([
                     hasPublishedBracket(user, selectedYear, genderPath),
-                    getUserCustomLeaderboards(user, selectedYear, genderPath)
+                    getUserCustomLeaderboards(user, selectedYear, genderPath),
+                    hasSavedBracket(user, selectedYear, genderPath)
                 ]);
                 setUserHasPublished(published);
                 setUserCustomLeaderboards(userLbs);
+                setUserHasBracket(hasBracket);
             } else {
                 setUserHasPublished(false);
                 setUserCustomLeaderboards([]);
+                setUserHasBracket(false);
             }
         };
         checkStatus();
@@ -376,7 +380,7 @@ function Leaderboard(): React.ReactElement {
                             {brackets.map((b) => {
                                 const canView = isPastCutoff() || isOwnBracket(b.bracketId);
                                 return (
-                                    <tr key={b.id} onClick={() => { if (canView) { logAnalyticsEvent('view_bracket', { tournament_year: selectedYear, gender: genderPath, is_own_bracket: isOwnBracket(b.bracketId) }); navigate(`/bracket/${selectedYear}/${b.bracketId}/${selectedGender === 'W' ? 'women' : 'men'}`); } }} className={`${canView ? 'clickable' : 'locked'} ${isOwnBracket(b.bracketId) ? 'user-row' : ''}`}>
+                                    <tr key={b.id} onClick={() => { if (canView) { logAnalyticsEvent('view_bracket', { tournament_year: selectedYear, gender: genderPath, is_own_bracket: isOwnBracket(b.bracketId), has_saved_bracket: userHasBracket }); navigate(`/bracket/${selectedYear}/${b.bracketId}/${selectedGender === 'W' ? 'women' : 'men'}`); } }} className={`${canView ? 'clickable' : 'locked'} ${isOwnBracket(b.bracketId) ? 'user-row' : ''}`}>
                                         <td>{b.rank}</td>
                                         <td className="champion-cell">{canView ? b.champion?.image && <img src={b.champion.image} alt="" /> : "🔒"}</td>
                                         <td>{b.bracketName}</td>

@@ -67,6 +67,8 @@ describe('Leaderboard Page', () => {
         // Firestore Mocks
         vi.spyOn(FirestoreModule, 'collection').mockReturnValue({} as any);
         vi.spyOn(FirestoreModule, 'getDocs').mockImplementation(mockGetDocs);
+        vi.spyOn(FirestoreModule, 'getDoc').mockResolvedValue({ exists: () => false } as any);
+        vi.spyOn(FirestoreModule, 'doc').mockReturnValue({} as any);
 
         // Leaderboard Service Mocks
         vi.spyOn(LeaderboardService, 'getAllCustomLeaderboardMeta').mockResolvedValue([]);

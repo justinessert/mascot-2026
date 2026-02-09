@@ -57,31 +57,12 @@ Quick mental mapping if you're used to Django/Flask:
 
 ## Analytics (Google Analytics 4)
 
-Firebase Analytics (GA4) is used to track user engagement. The setup has two layers:
+Firebase Analytics (GA4) is used to track user engagement. Key design decisions:
 
-### Localhost Guard
-In `services/firebase.ts`, the GA SDK is **not initialized** on `localhost` or `127.0.0.1`. This means zero analytics data is sent during local development — no network requests, no events, nothing.
+- **Localhost guard**: In `services/firebase.ts`, the GA SDK is **not initialized** on `localhost` or `127.0.0.1` — zero analytics data is sent during local development
+- **Analytics utility**: `utils/analytics.ts` provides `logAnalyticsEvent()` with event queuing and dev-mode console logging
+- **Page tracking**: `hooks/usePageTracking.ts` automatically logs `page_view` on every route change
 
-### Analytics Utility
-`utils/analytics.ts` provides helper functions (`logAnalyticsEvent`, `setAnalyticsUserId`, `setAnalyticsUserProperty`) that queue events if the SDK isn't ready yet. In dev mode, all events are logged to the browser console for debugging.
+For the full list of tracked events, custom dimensions, and GA4 console configuration instructions, see [ANALYTICS.md](./ANALYTICS.md).
 
-### Tracked Events
-
-| Event | Page | Description |
-|---|---|---|
-| `page_view` | All (via `usePageTracking`) | Automatic on every route change |
-| `login` | Login | Successful login |
-| `sign_up` | Signup | Successful account creation |
-| `logout` | Profile | User logs out |
-| `bracket_save` | WinnerSelection | Bracket saved |
-| `bracket_publish` | WinnerSelection | Bracket published to leaderboard |
-| `bracket_delete` | WinnerSelection | Bracket deleted |
-| `add_contributor` | WinnerSelection | Contributor added to bracket |
-| `leave_bracket` | WinnerSelection | User leaves a shared bracket |
-| `create_custom_leaderboard` | Leaderboard | Custom leaderboard created |
-| `join_custom_leaderboard` | Leaderboard | User joins a custom leaderboard |
-| `leave_custom_leaderboard` | Leaderboard | User leaves a custom leaderboard |
-| `delete_custom_leaderboard` | Leaderboard | Custom leaderboard deleted |
-| `view_bracket` | Leaderboard | User clicks to view a bracket |
-| `view_shared_bracket` | BracketView | Shared bracket loaded |
 

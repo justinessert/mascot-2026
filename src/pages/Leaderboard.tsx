@@ -183,6 +183,7 @@ function Leaderboard(): React.ReactElement {
         if (!user || !selectedLeaderboardId) return { success: false, error: 'Initialization error' };
         const result = await joinCustomLeaderboard(user, selectedLeaderboardId, selectedYear, password, genderPath);
         if (result.success) {
+            logAnalyticsEvent('join_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath });
             setUserIsMember(true);
             await loadLeaderboard();
             const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
@@ -196,6 +197,7 @@ function Leaderboard(): React.ReactElement {
         if (!window.confirm('Leave this leaderboard?')) return;
         const result = await leaveCustomLeaderboard(user, selectedLeaderboardId, selectedYear, genderPath);
         if (result.success) {
+            logAnalyticsEvent('leave_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath });
             setUserIsMember(false);
             await loadLeaderboard();
             const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
@@ -208,6 +210,7 @@ function Leaderboard(): React.ReactElement {
         if (!window.confirm('Delete this leaderboard?')) return;
         const result = await deleteCustomLeaderboard(user, selectedLeaderboardId, selectedYear, genderPath);
         if (result.success) {
+            logAnalyticsEvent('delete_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath });
             setSelectedLeaderboardId(null);
             const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
             setCustomLeaderboards(leaderboards);
@@ -373,7 +376,7 @@ function Leaderboard(): React.ReactElement {
                             {brackets.map((b) => {
                                 const canView = isPastCutoff() || isOwnBracket(b.bracketId);
                                 return (
-                                    <tr key={b.id} onClick={() => canView && navigate(`/bracket/${selectedYear}/${b.bracketId}/${selectedGender === 'W' ? 'women' : 'men'}`)} className={`${canView ? 'clickable' : 'locked'} ${isOwnBracket(b.bracketId) ? 'user-row' : ''}`}>
+                                    <tr key={b.id} onClick={() => { if (canView) { logAnalyticsEvent('view_bracket', { tournament_year: selectedYear, gender: genderPath, is_own_bracket: isOwnBracket(b.bracketId) }); navigate(`/bracket/${selectedYear}/${b.bracketId}/${selectedGender === 'W' ? 'women' : 'men'}`); } }} className={`${canView ? 'clickable' : 'locked'} ${isOwnBracket(b.bracketId) ? 'user-row' : ''}`}>
                                         <td>{b.rank}</td>
                                         <td className="champion-cell">{canView ? b.champion?.image && <img src={b.champion.image} alt="" /> : "🔒"}</td>
                                         <td>{b.bracketName}</td>

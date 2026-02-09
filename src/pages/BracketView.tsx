@@ -14,6 +14,7 @@ import { loadCorrectBracket, CorrectBracket } from '../services/correctBracketSe
 import { mensTournaments, womensTournaments } from '../constants/bracketData';
 import { useAuth } from '../hooks/useAuth';
 import FullBracketDisplay from '../components/FullBracketDisplay';
+import { logAnalyticsEvent } from '../utils/analytics';
 import type { Gender } from '../types/bracket';
 import './FullBracket.css'; // Reuse FullBracket styles
 
@@ -68,6 +69,7 @@ function BracketView(): React.ReactElement {
                 setContributors(bracket.contributors || []);
                 setContributorUids(bracket.contributorUids || []);
                 setOwnerUid(bracket.ownerUid || uuid || null);
+                logAnalyticsEvent('view_shared_bracket', { tournament_year: numericYear, gender: genderPath });
             } else {
                 setError('Bracket not found');
             }

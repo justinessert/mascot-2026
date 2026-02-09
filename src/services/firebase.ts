@@ -19,16 +19,22 @@ export const db: Firestore = getFirestore(app);
 export const functions: Functions = getFunctions(app);
 
 // Initialize Analytics conditionally to avoid errors in environments without window/indexedDB
+// Skip entirely on localhost so no analytics data is sent during local development
 import { getAnalytics, Analytics, isSupported } from 'firebase/analytics';
 
+const isLocalhost = typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
 let analytics: Analytics | null = null;
-const analyticsReady = isSupported().then(supported => {
-    if (supported) {
-        analytics = getAnalytics(app);
-        return analytics;
-    }
-    return null;
-});
+const analyticsReady: Promise<Analytics | null> = isLocalhost
+    ? Promise.resolve(null)
+    : isSupported().then(supported => {
+        if (supported) {
+            analytics = getAnalytics(app);
+            return analytics;
+        }
+        return null;
+    });
 
 export { analytics, analyticsReady };
 

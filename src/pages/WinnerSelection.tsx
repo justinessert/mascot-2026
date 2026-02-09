@@ -17,6 +17,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigationBlocker } from '../hooks/useNavigationBlocker';
 import { formatTeamName, formatMascotName } from '../constants/nicknames';
 import { Team, Region, initializeBracket, saveBracket, publishBracket, loadBracket, saveTemporaryBracket, loadTemporaryBracket, addContributor, getSharedBrackets, loadBracketByUserId, leaveBracket, deleteBracket, TemporaryBracketData } from '../services/bracketService';
+import { logAnalyticsEvent } from '../utils/analytics';
 import ComingSoon from '../components/ComingSoon';
 import RegionProgress from '../components/RegionProgress';
 import ChampionView from '../components/ChampionView';
@@ -365,6 +366,7 @@ function WinnerSelection(): React.ReactElement {
             }
             setSaved(true);
             setIsModified(false);
+            logAnalyticsEvent('bracket_save', { tournament_year: selectedYear, gender: genderPath, has_champion: !!champion });
             alert('Bracket saved successfully!');
         } catch (error) {
             console.error('Error saving bracket:', error);
@@ -377,6 +379,7 @@ function WinnerSelection(): React.ReactElement {
         try {
             await publishBracket(user!, selectedYear, regions, bracketName, champion, genderPath);
             setPublished(true);
+            logAnalyticsEvent('bracket_publish', { tournament_year: selectedYear, gender: genderPath, bracket_name: bracketName });
             alert('Bracket published!');
             safeNavigate('/leaderboard');
         } catch (error) {
@@ -390,6 +393,7 @@ function WinnerSelection(): React.ReactElement {
         const result = await addContributor(user, username, selectedYear, genderPath);
         if (result.success) {
             setContributors(prev => [...prev, result.addedDisplayName || username]);
+            logAnalyticsEvent('add_contributor', { tournament_year: selectedYear, gender: genderPath });
         }
         return result;
     }, [user, selectedYear, genderPath]);
@@ -399,6 +403,7 @@ function WinnerSelection(): React.ReactElement {
         if (!window.confirm('Leave this bracket?')) return;
         const result = await leaveBracket(user, ownerUid, selectedYear, genderPath);
         if (result.success) {
+            logAnalyticsEvent('leave_bracket', { tournament_year: selectedYear, gender: genderPath });
             setIsSecondaryOwner(false);
             setOwnerUid(null);
             await initializeOrLoadBracket();
@@ -412,6 +417,7 @@ function WinnerSelection(): React.ReactElement {
         if (!window.confirm('Delete this bracket?')) return;
         const result = await deleteBracket(user, selectedYear, genderPath);
         if (result.success) {
+            logAnalyticsEvent('bracket_delete', { tournament_year: selectedYear, gender: genderPath });
             saveTemporaryBracket(selectedYear, null, genderPath);
             safeNavigate('/');
         }

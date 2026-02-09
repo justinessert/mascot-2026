@@ -32,10 +32,9 @@ const flushQueue = async () => {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const logAnalyticsEvent = (eventName: string, eventParams?: { [key: string]: any }) => {
-    // Always log to console in development
+    // Log to console in development for debugging
     if (import.meta.env.DEV) {
         console.log(`[Analytics] ${eventName}`, eventParams);
-        return; // Don't send to GA in dev
     }
 
     if (analytics) {
@@ -54,7 +53,6 @@ export const logAnalyticsEvent = (eventName: string, eventParams?: { [key: strin
 export const setAnalyticsUserId = (userId: string | null) => {
     if (import.meta.env.DEV) {
         console.log('[Analytics] Setting User ID:', userId);
-        return; // Don't send in dev
     }
 
     analyticsReady.then(activeAnalytics => {
@@ -70,7 +68,6 @@ export const setAnalyticsUserId = (userId: string | null) => {
 export const setAnalyticsUserProperty = (properties: { [key: string]: string }) => {
     if (import.meta.env.DEV) {
         console.log(`[Analytics] Setting User Properties:`, properties);
-        return; // Don't send in dev
     }
 
     analyticsReady.then(activeAnalytics => {

@@ -7,6 +7,7 @@ import { getUserBracketHistory, BracketHistoryEntry } from '../services/bracketS
 import HistoryTable from '../components/HistoryTable';
 import { mensTournaments, womensTournaments } from '../constants/bracketData';
 import type { Gender, GenderCode, TournamentConfig } from '../types/bracket';
+import { logAnalyticsEvent } from '../utils/analytics';
 import './Profile.css';
 
 function Profile(): React.ReactElement {
@@ -47,6 +48,7 @@ function Profile(): React.ReactElement {
     const handleLogout = async (): Promise<void> => {
         try {
             await logout();
+            logAnalyticsEvent('logout');
             navigate('/');
         } catch (error) {
             console.error('Logout error:', error);

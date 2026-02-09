@@ -183,7 +183,7 @@ function Leaderboard(): React.ReactElement {
         if (!user || !selectedLeaderboardId) return { success: false, error: 'Initialization error' };
         const result = await joinCustomLeaderboard(user, selectedLeaderboardId, selectedYear, password, genderPath);
         if (result.success) {
-            logAnalyticsEvent('join_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath });
+            logAnalyticsEvent('join_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath, leaderboard_name: selectedLeaderboardMeta?.name || '' });
             setUserIsMember(true);
             await loadLeaderboard();
             const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
@@ -197,7 +197,7 @@ function Leaderboard(): React.ReactElement {
         if (!window.confirm('Leave this leaderboard?')) return;
         const result = await leaveCustomLeaderboard(user, selectedLeaderboardId, selectedYear, genderPath);
         if (result.success) {
-            logAnalyticsEvent('leave_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath });
+            logAnalyticsEvent('leave_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath, leaderboard_name: selectedLeaderboardMeta?.name || '' });
             setUserIsMember(false);
             await loadLeaderboard();
             const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
@@ -210,7 +210,7 @@ function Leaderboard(): React.ReactElement {
         if (!window.confirm('Delete this leaderboard?')) return;
         const result = await deleteCustomLeaderboard(user, selectedLeaderboardId, selectedYear, genderPath);
         if (result.success) {
-            logAnalyticsEvent('delete_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath });
+            logAnalyticsEvent('delete_custom_leaderboard', { tournament_year: selectedYear, gender: genderPath, leaderboard_name: selectedLeaderboardMeta?.name || '' });
             setSelectedLeaderboardId(null);
             const leaderboards = await getAllCustomLeaderboardMeta(selectedYear, genderPath);
             setCustomLeaderboards(leaderboards);

@@ -366,7 +366,7 @@ function WinnerSelection(): React.ReactElement {
             }
             setSaved(true);
             setIsModified(false);
-            logAnalyticsEvent('bracket_save', { tournament_year: selectedYear, gender: genderPath, has_champion: !!champion });
+            logAnalyticsEvent('bracket_save', { tournament_year: selectedYear, gender: genderPath, has_champion: !!champion, bracket_name: bracketName, user_name: user.displayName || '' });
             alert('Bracket saved successfully!');
         } catch (error) {
             console.error('Error saving bracket:', error);
@@ -379,7 +379,7 @@ function WinnerSelection(): React.ReactElement {
         try {
             await publishBracket(user!, selectedYear, regions, bracketName, champion, genderPath);
             setPublished(true);
-            logAnalyticsEvent('bracket_publish', { tournament_year: selectedYear, gender: genderPath, bracket_name: bracketName });
+            logAnalyticsEvent('bracket_publish', { tournament_year: selectedYear, gender: genderPath, bracket_name: bracketName, user_name: user!.displayName || '' });
             alert('Bracket published!');
             safeNavigate('/leaderboard');
         } catch (error) {
@@ -393,7 +393,7 @@ function WinnerSelection(): React.ReactElement {
         const result = await addContributor(user, username, selectedYear, genderPath);
         if (result.success) {
             setContributors(prev => [...prev, result.addedDisplayName || username]);
-            logAnalyticsEvent('add_contributor', { tournament_year: selectedYear, gender: genderPath });
+            logAnalyticsEvent('add_contributor', { tournament_year: selectedYear, gender: genderPath, bracket_name: bracketName, user_name: user.displayName || '' });
         }
         return result;
     }, [user, selectedYear, genderPath]);
@@ -403,7 +403,7 @@ function WinnerSelection(): React.ReactElement {
         if (!window.confirm('Leave this bracket?')) return;
         const result = await leaveBracket(user, ownerUid, selectedYear, genderPath);
         if (result.success) {
-            logAnalyticsEvent('leave_bracket', { tournament_year: selectedYear, gender: genderPath });
+            logAnalyticsEvent('leave_bracket', { tournament_year: selectedYear, gender: genderPath, bracket_name: bracketName, user_name: user.displayName || '' });
             setIsSecondaryOwner(false);
             setOwnerUid(null);
             await initializeOrLoadBracket();
@@ -417,7 +417,7 @@ function WinnerSelection(): React.ReactElement {
         if (!window.confirm('Delete this bracket?')) return;
         const result = await deleteBracket(user, selectedYear, genderPath);
         if (result.success) {
-            logAnalyticsEvent('bracket_delete', { tournament_year: selectedYear, gender: genderPath });
+            logAnalyticsEvent('bracket_delete', { tournament_year: selectedYear, gender: genderPath, bracket_name: bracketName, user_name: user.displayName || '' });
             saveTemporaryBracket(selectedYear, null, genderPath);
             safeNavigate('/');
         }

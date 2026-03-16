@@ -85,85 +85,28 @@
 }
 ```
 
-4. Run the `clear && node scripts/parse_games.mjs` to see the game ids for each game
-5. Reference the ESPN tournament bracket to see which games belong where in each region and round
-6. Create a mappings file within the `functions/data/` directory and enter in the year and gender.
-7. Manually copy over the game ids for each region and round into the mappings file. Example (after entering round 1):
+4. Run the generate mappings script to automatically build the mappings file:
 
-```json
-{
-    "year": 2025,
-    "gender": "women",
-    "newMappings": {
-        "regional_1": {
-            "round_1": [
-                "2640518",
-                "2640533",
-                "2640525",
-                "2640511",
-                "2640510",
-                "2640524",
-                "2640532",
-                "2640519"
-            ],
-            "round_2": [],
-            "round_3": [],
-            "round_4": []
-        },
-        "regional_2": {
-            "round_1": [
-                "2640512",
-                "2640517",
-                "2640523",
-                "2640521",
-                "2640520",
-                "2640522",
-                "2640516",
-                "2640513"
-            ],
-            "round_2": [],
-            "round_3": [],
-            "round_4": []
-        },
-        "regional_3": {
-            "round_1": [
-                "2640526",
-                "2640505",
-                "2640515",
-                "2640507",
-                "2640506",
-                "2640514",
-                "2640504",
-                "2640527"
-            ],
-            "round_2": [],
-            "round_3": [],
-            "round_4": []
-        },
-        "regional_4": {
-            "round_1": [
-                "2640534",
-                "2640531",
-                "2640529",
-                "2640509",
-                "2640508",
-                "2640528",
-                "2640530",
-                "2640535"
-            ],
-            "round_2": [],
-            "round_3": [],
-            "round_4": []
-        },
-        "final_four": {
-            "round_1": [],
-            "round_2": []
-        }
-    }
-}
+```bash
+node scripts/generate_mappings.mjs <sport> <year>
 ```
 
-8. Run the following command to get an auth token:
+Examples:
+```bash
+node scripts/generate_mappings.mjs basketball-men 2026
+node scripts/generate_mappings.mjs basketball-women 2026
+```
+
+This fetches the NCAA brackets API (`/brackets/<sport>/d1/<year>`), extracts game IDs (`contestId`) organized by region and round, and writes the output to `functions/data/mappings_<year>_<gender>.json`.
+
+The script uses `sectionId` from the bracket data to determine which region each game belongs to, and `bracketId` to determine the round (2xx = Round 1, 3xx = Round 2, etc.). Games are sorted within each round by `bracketId` to maintain standard bracket order (1v16, 8v9, 5v12, 4v13, 6v11, 3v14, 7v10, 2v15).
+
+5. Validate a few game IDs by spot-checking against the ESPN bracket or the game endpoint:
+    - `https://ncaa-api.henrygd.me/game/<contestId>` returns game details including team names and seeds
+
+> **Note:** The older manual approach (`node scripts/parse_games.mjs`) still exists and can be used as a fallback. It parses `functions/data/games_raw_output.json` (from the scoreboard API) and prints game IDs, but requires manually cross-referencing with ESPN and copying IDs into a mappings file.
+
+6. Run the following command to get an auth token:
     - POST https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyApC10RWiaRHShY4cl7uIKHqkrUyg-8TVc
     - Auth Type: No Auth
     - Body Type: raw
@@ -177,26 +120,26 @@
 }
 ```
 
-9. Copy over that data into Postman and run the following request:
+7. Copy over that data into Postman and run the following request:
     - POST https://us-central1-mascot-bracket.cloudfunctions.net/updateGameMappings
     - Body Type: raw
     - Body: content from mapping file
     - Auth Type: Bearer Token
     - Token: From the `idToken` field in the response from the previous step
-10. In Postman, run the following request twice (once for each date you pulled from the NCAA API):
+8. In Postman, run the following request twice (once for each date you pulled from the NCAA API):
     - GET https://us-central1-mascot-bracket.cloudfunctions.net/manualUpdateNCAAGames
     - Params
         - `date`: (example) 03-21-2025
         - `gender`: (example) women
     - Auth Type: Bearer Token
-    - Token: From the `idToken` field in the response from step 8
-11. In Postman, run the following request to update the scores of each bracket in the leaderboard:
+    - Token: From the `idToken` field in the response from step 6
+9. In Postman, run the following request to update the scores of each bracket in the leaderboard:
     - GET https://us-central1-mascot-bracket.cloudfunctions.net/updateBracketScores
     - Params
         - `year`: (example) 2025
         - `gender`: (example) women
     - Auth Type: Bearer Token
-    - Token: From the `idToken` field in the response from step 8
-12. Open a bracket on the leaderboard and the ESPN website and manually calculate the scores (if you don't already have a bracket on the leaderboard, create one and repeat the previous step)
-13. Repeat the preceeding steps for every round
+    - Token: From the `idToken` field in the response from step 6
+10. Open a bracket on the leaderboard and the ESPN website and manually calculate the scores (if you don't already have a bracket on the leaderboard, create one and repeat the previous step)
+11. Repeat the preceeding steps for every round
     

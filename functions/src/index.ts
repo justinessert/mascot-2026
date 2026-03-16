@@ -31,8 +31,8 @@ export const manualUpdateNCAAGames = onRequest(
 // Scheduled Automatic Update (Every 15 minutes)
 export const scheduledUpdateNCAAGames = onSchedule(
     {
-        // schedule: "every 15 minutes",
-        schedule: "0 0 1 * *", // Run at 00:00 on day-of-month 1
+        schedule: "every 15 minutes",
+        // schedule: "0 0 1 * *", // Run at 00:00 on day-of-month 1
         timeoutSeconds: 540,
     },
     async () => {

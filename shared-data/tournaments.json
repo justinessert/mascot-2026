@@ -366,11 +366,94 @@
         "2026": {
             "year": 2026,
             "gender": "men",
-            "regions": null,
-            "regionOrder": null,
-            "firstFourMapping": null,
+            "regions": {
+                "east": [
+                    "duke",
+                    "uconn",
+                    "michigan_state",
+                    "kansas",
+                    "saint_johns",
+                    "louisville",
+                    "ucla",
+                    "ohio_state",
+                    "tcu",
+                    "ucf",
+                    "south_florida",
+                    "northern_iowa",
+                    "ca_baptist",
+                    "north_dakota_state",
+                    "furman",
+                    "siena"
+                ],
+                "south": [
+                    "florida",
+                    "houston",
+                    "illinois",
+                    "nebraska",
+                    "vanderbilt",
+                    "north_carolina",
+                    "saint_marys",
+                    "clemson",
+                    "iowa",
+                    "texas_a&m",
+                    "vcu",
+                    "mcneese",
+                    "troy",
+                    "penn",
+                    "idaho",
+                    "lehigh_or_prairie_view"
+                ],
+                "midwest": [
+                    "michigan",
+                    "iowa_state",
+                    "virginia",
+                    "alabama",
+                    "texas_tech",
+                    "tennessee",
+                    "kentucky",
+                    "georgia",
+                    "saint_louis",
+                    "santa_clara",
+                    "smu_or_miami_oh",
+                    "akron",
+                    "hofstra",
+                    "wright_state",
+                    "tennessee_state",
+                    "howard_or_umbc"
+                ],
+                "west": [
+                    "arizona",
+                    "purdue",
+                    "gonzaga",
+                    "arkansas",
+                    "wisconsin",
+                    "byu",
+                    "miami",
+                    "villanova",
+                    "utah_state",
+                    "missouri",
+                    "nc_state_or_texas",
+                    "high_point",
+                    "hawaii",
+                    "kennesaw_state",
+                    "queens",
+                    "long_island"
+                ]
+            },
+            "regionOrder": [
+                "east",
+                "west",
+                "midwest",
+                "south"
+            ],
+            "firstFourMapping": {
+                "lehigh_or_prairie_view": "lehigh_or_prairie_view",
+                "smu_or_miami_oh": "smu_or_miami_oh",
+                "howard_or_umbc": "howard_or_umbc",
+                "nc_state_or_texas": "nc_state_or_texas"
+            },
             "cutoffTime": "2026-03-20T16:15:00.000Z",
-            "selectionSundayTime": "2026-03-15T22:00:00.000Z"
+            "selectionSundayTime": "2026-03-15T20:00:00.000Z"
         }
     },
     "women": {
@@ -469,8 +552,18 @@
         "2026": {
             "year": 2026,
             "gender": "women",
-            "regions": null,
-            "regionOrder": null,
+            "regions": {
+                "regional_1": [],
+                "regional_2": [],
+                "regional_3": [],
+                "regional_4": []
+            },
+            "regionOrder": [
+                "regional_1",
+                "regional_2",
+                "regional_3",
+                "regional_4"
+            ],
             "firstFourMapping": null,
             "cutoffTime": "2026-03-20T18:00:00.000Z",
             "selectionSundayTime": "2026-03-16T00:00:00.000Z"

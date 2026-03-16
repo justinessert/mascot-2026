@@ -453,7 +453,7 @@
                 "nc_state_or_texas": "nc_state_or_texas"
             },
             "cutoffTime": "2026-03-20T16:15:00.000Z",
-            "selectionSundayTime": "2026-03-15T20:00:00.000Z"
+            "selectionSundayTime": "2026-03-15T22:00:00.000Z"
         }
     },
     "women": {
@@ -553,10 +553,78 @@
             "year": 2026,
             "gender": "women",
             "regions": {
-                "regional_1": [],
-                "regional_2": [],
-                "regional_3": [],
-                "regional_4": []
+                "regional_1": [
+                    "uconn",
+                    "vanderbilt",
+                    "ohio_state",
+                    "north_carolina",
+                    "maryland",
+                    "nortre_dame",
+                    "illinois",
+                    "iowa_state",
+                    "syracuse",
+                    "colorado",
+                    "fairfield",
+                    "murray_state",
+                    "western_illinois",
+                    "howard",
+                    "high_point",
+                    "utsa"
+                ],
+                "regional_2": [
+                    "ucla",
+                    "lsu",
+                    "duke",
+                    "minnesota",
+                    "ole_miss",
+                    "baylor",
+                    "texas_tech",
+                    "oklahoma_state",
+                    "princeton",
+                    "villanova",
+                    "richmond_or_nebraska",
+                    "gonzaga",
+                    "green_bay",
+                    "charleston",
+                    "jacksonville",
+                    "ca_baptist"
+                ],
+                "regional_3": [
+                    "texas",
+                    "michigan",
+                    "louisville",
+                    "west_virginia",
+                    "kentucky",
+                    "alabama",
+                    "nc_state",
+                    "oregon",
+                    "virginia_tech",
+                    "tennessee",
+                    "rhode_island",
+                    "james_madison",
+                    "miami_oh",
+                    "vermont",
+                    "holy_cross",
+                    "missouri_state_or_sf_austin"
+                ],
+                "regional_4": [
+                    "south_carolina",
+                    "iowa",
+                    "tcu",
+                    "oklahoma",
+                    "michigan_state",
+                    "washington",
+                    "georgia",
+                    "clemson",
+                    "usc",
+                    "arizona_state_or_virginia",
+                    "south_dakota_state",
+                    "colorado_state",
+                    "idaho",
+                    "uc_san_diego",
+                    "fdu",
+                    "southern_or_samford"
+                ]
             },
             "regionOrder": [
                 "regional_1",
@@ -564,7 +632,12 @@
                 "regional_3",
                 "regional_4"
             ],
-            "firstFourMapping": null,
+            "firstFourMapping": {
+                "richmond_or_nebraska": "richmond_or_nebraska",
+                "missouri_state_or_sf_austin": "missouri_state_or_sf_austin",
+                "arizona_state_or_virginia": "arizona_state_or_virginia",
+                "southern_or_samford": "southern_or_samford"
+            },
             "cutoffTime": "2026-03-20T18:00:00.000Z",
             "selectionSundayTime": "2026-03-16T00:00:00.000Z"
         }

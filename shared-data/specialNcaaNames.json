@@ -18,6 +18,7 @@
   "nc_state": "north-carolina-st",
   "northern_iowa": "uni",
   "northern_kentucky": "northern-ky",
+  "nortre_dame": "notre-dame",
   "omaha": "neb-omaha",
   "queens": "queens-nc",
   "saint_francis_u": "st-francis-pa",
@@ -34,5 +35,6 @@
   "texas_a&m_cc": "am-corpus-chris",
   "ucsb": "uc-santa-barbara",
   "usc": "southern-california",
+  "western_illinois": "western-ill",
   "western_kentucky": "western-ky"
 }

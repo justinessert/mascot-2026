@@ -553,7 +553,7 @@
             "year": 2026,
             "gender": "women",
             "regions": {
-                "regional_1": [
+                "fort worth 1": [
                     "uconn",
                     "vanderbilt",
                     "ohio_state",
@@ -571,7 +571,7 @@
                     "high_point",
                     "utsa"
                 ],
-                "regional_2": [
+                "sacramento 2": [
                     "ucla",
                     "lsu",
                     "duke",
@@ -589,7 +589,7 @@
                     "jacksonville",
                     "ca_baptist"
                 ],
-                "regional_3": [
+                "fort worth 3": [
                     "texas",
                     "michigan",
                     "louisville",
@@ -607,7 +607,7 @@
                     "holy_cross",
                     "missouri_state_or_sf_austin"
                 ],
-                "regional_4": [
+                "sacramento 4": [
                     "south_carolina",
                     "iowa",
                     "tcu",
@@ -627,10 +627,10 @@
                 ]
             },
             "regionOrder": [
-                "regional_1",
-                "regional_2",
-                "regional_3",
-                "regional_4"
+                "fort worth 1",
+                "sacramento 2",
+                "fort worth 3",
+                "sacramento 4"
             ],
             "firstFourMapping": {
                 "richmond_or_nebraska": "richmond_or_nebraska",

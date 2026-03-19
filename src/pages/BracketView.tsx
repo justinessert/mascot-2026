@@ -11,6 +11,7 @@ import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTitle } from '../hooks/useTitle';
 import { loadBracketByUserId, leaveBracket, deleteBracket, Region, hasSavedBracket } from '../services/bracketService';
 import { loadCorrectBracket, CorrectBracket } from '../services/correctBracketService';
+import { useTournament } from '../hooks/useTournament';
 import { mensTournaments, womensTournaments } from '../constants/bracketData';
 import { useAuth } from '../hooks/useAuth';
 import FullBracketDisplay from '../components/FullBracketDisplay';
@@ -27,6 +28,7 @@ function BracketView(): React.ReactElement {
     const location = useLocation();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { getCutoffTime } = useTournament();
     const numericYear = parseInt(year || '2025', 10);
 
     // Convert gender from URL (default to 'men' if not provided)
@@ -56,6 +58,11 @@ function BracketView(): React.ReactElement {
 
     // Check if current user is the owner of this bracket
     const isOwner = user && ownerUid && user.uid === ownerUid;
+
+    const isPastCutoff = useCallback((): boolean => {
+        const cutoff = getCutoffTime();
+        return !!cutoff && new Date() >= cutoff;
+    }, [getCutoffTime]);
 
     const loadSharedBracket = useCallback(async (): Promise<void> => {
         setLoading(true);
@@ -149,6 +156,18 @@ function BracketView(): React.ReactElement {
                 <div className="bracket-error">
                     <h2>⚠️ {error}</h2>
                     <p>The bracket you're looking for could not be found.</p>
+                    <Link to={backLink} className="back-link">← {backLinkText}</Link>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isPastCutoff() && !isOwner && !isContributor) {
+        return (
+            <div className="full-bracket-container">
+                <div className="bracket-error">
+                    <h2>🔒 Bracket Locked</h2>
+                    <p>This bracket will be revealed after the tournament starts.</p>
                     <Link to={backLink} className="back-link">← {backLinkText}</Link>
                 </div>
             </div>

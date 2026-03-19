@@ -106,8 +106,8 @@ function Leaderboard(): React.ReactElement {
         return !!cutoff && new Date() >= cutoff;
     }, [getCutoffTime]);
 
-    const isOwnBracket = useCallback((bracketId: string): boolean => {
-        return !!user && bracketId === user.uid;
+    const isOwnBracket = useCallback((bracketId: string, contributorUids?: string[]): boolean => {
+        return !!user && (bracketId === user.uid || (contributorUids || []).includes(user.uid));
     }, [user]);
 
     const selectedLeaderboardMeta = useMemo(() => {
@@ -164,7 +164,7 @@ function Leaderboard(): React.ReactElement {
                 rank++;
             }
             setBrackets(bracketList);
-            setUserBracket(user ? bracketList.find(b => b.bracketId === user.uid) || null : null);
+            setUserBracket(user ? bracketList.find(b => isOwnBracket(b.bracketId, b.contributorUids)) || null : null);
         } catch (error) {
             console.error('Error loading leaderboard:', error);
         }
@@ -378,9 +378,9 @@ function Leaderboard(): React.ReactElement {
                         <thead><tr><th>Rank</th><th>Champion</th><th>Bracket</th><th>User</th><th>Score</th>{isPastCutoff() && <th>Max</th>}</tr></thead>
                         <tbody>
                             {brackets.map((b) => {
-                                const canView = isPastCutoff() || isOwnBracket(b.bracketId);
+                                const canView = isPastCutoff() || isOwnBracket(b.bracketId, b.contributorUids);
                                 return (
-                                    <tr key={b.id} onClick={() => { if (canView) { logAnalyticsEvent('view_bracket', { tournament_year: selectedYear, gender: genderPath, is_own_bracket: isOwnBracket(b.bracketId), has_saved_bracket: userHasBracket }); navigate(`/bracket/${selectedYear}/${b.bracketId}/${selectedGender === 'W' ? 'women' : 'men'}`); } }} className={`${canView ? 'clickable' : 'locked'} ${isOwnBracket(b.bracketId) ? 'user-row' : ''}`}>
+                                    <tr key={b.id} onClick={() => { if (canView) { logAnalyticsEvent('view_bracket', { tournament_year: selectedYear, gender: genderPath, is_own_bracket: isOwnBracket(b.bracketId, b.contributorUids), has_saved_bracket: userHasBracket }); navigate(`/bracket/${selectedYear}/${b.bracketId}/${selectedGender === 'W' ? 'women' : 'men'}`); } }} className={`${canView ? 'clickable' : 'locked'} ${isOwnBracket(b.bracketId, b.contributorUids) ? 'user-row' : ''}`}>
                                         <td>{b.rank}</td>
                                         <td className="champion-cell">{canView ? b.champion?.image && <img src={b.champion.image} alt="" /> : "🔒"}</td>
                                         <td>{b.bracketName}</td>

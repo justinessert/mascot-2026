@@ -363,6 +363,7 @@ interface LoadedBracket {
     name: string;
     published: boolean;
     contributors?: string[];
+    ownerUid?: string;
 }
 
 /**
@@ -383,7 +384,25 @@ export async function loadBracket(user: User | null, year: number, gender: Gende
             name: data.name,
             published: data.published,
             contributors: data.contributors || [],
+            ownerUid: user.uid,
         };
+    }
+
+    // Try to load a shared bracket
+    const sharedBrackets = await getSharedBrackets(user, year, gender);
+    if (sharedBrackets.length > 0) {
+        const sharedId = sharedBrackets[0].ownerUid;
+        const sharedBracketSnap = await getDoc(doc(db, `brackets/${gender}/years/${year}/users/${sharedId}`));
+        if (sharedBracketSnap.exists()) {
+            const data = sharedBracketSnap.data();
+            return {
+                regions: loadRegions(data.bracket, year),
+                name: data.name,
+                published: data.published,
+                contributors: data.contributors || [],
+                ownerUid: sharedId,
+            };
+        }
     }
 
     return null;
@@ -398,7 +417,11 @@ export async function hasSavedBracket(user: User | null, year: number, gender: G
 
     const userBracketRef: DocumentReference = doc(db, `brackets/${gender}/years/${year}/users/${user.uid}`);
     const snapshot = await getDoc(userBracketRef);
-    return snapshot.exists();
+    if (snapshot.exists()) return true;
+
+    // Check for shared bracket
+    const sharedBrackets = await getSharedBrackets(user, year, gender);
+    return sharedBrackets.length > 0;
 }
 
 interface LoadedBracketByUserId {
@@ -498,17 +521,21 @@ export async function getUserBracketHistory(user: User | null, gender: Gender = 
     const history: BracketHistoryEntry[] = [];
 
     for (const year of years) {
-        // 1. Try to load user's own saved bracket
+        // 1. Try to load user's own saved bracket (which may fallback to a shared bracket)
         const savedBracket = await loadBracket(user, +year, gender);
+
+        // Track what we've added to avoid duplicates
+        const addedBracketIds = new Set<string>();
 
         if (savedBracket) {
             let score: number = 0;
+            const bracketId = savedBracket.ownerUid || user.uid;
 
-            // 2. If published, try to get score from leaderboard (direct fetch by userId)
+            // 2. If published, try to get score from leaderboard
             if (savedBracket.published) {
                 try {
-                    // Doc ID is userId, so we can fetch directly
-                    const leaderboardEntryRef: DocumentReference = doc(db, `leaderboard/${gender}/years/${year}/entries/${user.uid}`);
+                    // Use ownerUid to fetch correctly if it is a shared bracket, otherwise user.uid
+                    const leaderboardEntryRef: DocumentReference = doc(db, `leaderboard/${gender}/years/${year}/entries/${bracketId}`);
                     const entryDoc = await getDoc(leaderboardEntryRef);
 
                     if (entryDoc.exists()) {
@@ -525,26 +552,36 @@ export async function getUserBracketHistory(user: User | null, gender: Gender = 
 
             history.push({
                 year: parseInt(year),
-                bracketId: user.uid, // User's bracket ID is their UID
+                bracketId: bracketId, // User's bracket ID or shared bracket ID
                 bracketName: savedBracket.name || 'Untitled Bracket',
                 published: savedBracket.published,
                 score: savedBracket.published ? score : '-',
                 champion: champion,
                 timestamp: undefined // Could add if we stored it
             });
+
+            addedBracketIds.add(bracketId);
         }
 
-        // 3. Also load shared brackets where user is a contributor
+        // 3. Also load any additional shared brackets where user is a contributor
         const sharedBrackets = await getSharedBrackets(user, +year, gender);
 
         for (const shared of sharedBrackets) {
+            // Skip if we already added it (e.g., from loadBracket fallback)
+            if (addedBracketIds.has(shared.ownerUid)) continue;
+
             // Fetch score from the shared bracket's leaderboard entry
             let sharedScore: number = 0;
+            let sharedChampion: Team | null = null;
             try {
                 const leaderboardRef: DocumentReference = doc(db, `leaderboard/${gender}/years/${year}/entries/${shared.ownerUid}`);
                 const entryDoc = await getDoc(leaderboardRef);
                 if (entryDoc.exists()) {
-                    sharedScore = entryDoc.data().score || 0;
+                    const data = entryDoc.data();
+                    sharedScore = data.score || 0;
+                    if (data.champion) {
+                        sharedChampion = Team.fromDict(data.champion, +year);
+                    }
                 }
             } catch (err) {
                 console.error(`Error fetching shared bracket score for ${year}:`, err);
@@ -556,9 +593,11 @@ export async function getUserBracketHistory(user: User | null, gender: Gender = 
                 bracketName: `${shared.bracketName} (shared with ${shared.ownerName})`,
                 published: true, // Shared brackets are always published
                 score: sharedScore,
-                champion: null, // Could load if needed
+                champion: sharedChampion,
                 timestamp: undefined
             });
+
+            addedBracketIds.add(shared.ownerUid);
         }
     }
 

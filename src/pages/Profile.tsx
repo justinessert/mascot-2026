@@ -117,6 +117,7 @@ function Profile(): React.ReactElement {
                         data={menHistory}
                         loading={loading}
                         emptyMessage="No men's brackets created yet."
+                        gender="men"
                         onAction={() => handleCreateBracket('men')}
                         actionLabel="Create Men's Bracket"
                     />
@@ -126,6 +127,7 @@ function Profile(): React.ReactElement {
                         data={womenHistory}
                         loading={loading}
                         emptyMessage="No women's brackets created yet."
+                        gender="women"
                         onAction={() => handleCreateBracket('women')}
                         actionLabel="Create Women's Bracket"
                     />

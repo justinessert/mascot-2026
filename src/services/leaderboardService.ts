@@ -355,7 +355,14 @@ export async function hasPublishedBracket(
     const entryRef = doc(db, getEntriesPath(gender, year), user.uid);
     const snapshot = await getDoc(entryRef);
 
-    return snapshot.exists();
+    if (snapshot.exists()) return true;
+
+    // Check if user is a contributor on any leaderboard entry for this tournament
+    const entriesRef = collection(db, getEntriesPath(gender, year));
+    const q = query(entriesRef, where('contributorUids', 'array-contains', user.uid));
+    const sharedSnap = await getDocs(q);
+
+    return !sharedSnap.empty;
 }
 
 /**

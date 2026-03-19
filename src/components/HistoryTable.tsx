@@ -15,11 +15,12 @@ interface HistoryTableProps {
     title: string;
     loading: boolean;
     emptyMessage: string;
+    gender: 'men' | 'women';
     onAction?: () => void;
     actionLabel?: string;
 }
 
-function HistoryTable({ data, title, loading, emptyMessage, onAction, actionLabel }: HistoryTableProps): React.ReactElement {
+function HistoryTable({ data, title, loading, emptyMessage, gender, onAction, actionLabel }: HistoryTableProps): React.ReactElement {
     const navigate = useNavigate();
 
     return (
@@ -53,7 +54,7 @@ function HistoryTable({ data, title, loading, emptyMessage, onAction, actionLabe
                             {data.map((bracket) => (
                                 <tr
                                     key={bracket.year}
-                                    onClick={() => navigate(`/bracket/${bracket.year}/${bracket.bracketId}`, { state: { from: 'profile' } })}
+                                    onClick={() => navigate(`/bracket/${bracket.year}/${bracket.bracketId}/${gender}`, { state: { from: 'profile' } })}
                                     className="clickable"
                                 >
                                     <td className="year-cell">{bracket.year}</td>

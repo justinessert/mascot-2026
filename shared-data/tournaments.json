@@ -633,7 +633,7 @@
                 "sacramento 4"
             ],
             "firstFourMapping": {
-                "richmond_or_nebraska": "richmond_or_nebraska",
+                "richmond_or_nebraska": "nebraska",
                 "missouri_state_or_sf_austin": "missouri_state_or_sf_austin",
                 "arizona_state_or_virginia": "arizona_state_or_virginia",
                 "southern_or_samford": "southern_or_samford"

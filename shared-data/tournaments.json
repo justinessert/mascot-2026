@@ -447,7 +447,7 @@
                 "south"
             ],
             "firstFourMapping": {
-                "lehigh_or_prairie_view": "lehigh_or_prairie_view",
+                "lehigh_or_prairie_view": "prairie_view",
                 "smu_or_miami_oh": "smu_or_miami_oh",
                 "howard_or_umbc": "howard",
                 "nc_state_or_texas": "texas"

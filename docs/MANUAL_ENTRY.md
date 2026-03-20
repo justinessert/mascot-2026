@@ -4,10 +4,10 @@
 
 - Men's Tournament:
     - https://www.espn.com/mens-college-basketball/bracket
-    - https://data.ncaa.com/casablanca/scoreboard/basketball-men/d1/2025/04/06/scoreboard.json
+    - https://ncaa-api.henrygd.me/scoreboard/basketball-men/d1/2026/03/19/all-conf
 - Women's Tournament:
     - https://www.espn.com/womens-college-basketball/bracket
-    - https://data.ncaa.com/casablanca/scoreboard/basketball-women/d1/2025/04/06/scoreboard.json
+    - https://ncaa-api.henrygd.me/scoreboard/basketball-women/d1/2026/03/19/all-conf
 
 ## Process
 

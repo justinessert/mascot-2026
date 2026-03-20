@@ -8,7 +8,7 @@ async function fetchNCAAGamesFromAPI(date: string | null = null, gender: "men" |
     const pacificNow = DateTime.now().setZone("America/Los_Angeles");
     const targetDate = date || pacificNow.toFormat("yyyy/MM/dd"); // Format: "2024/03/10"
     const sport = gender === "men" ? "basketball-men" : "basketball-women";
-    const apiUrl = `https://data.ncaa.com/casablanca/scoreboard/${sport}/d1/${targetDate}/scoreboard.json`;
+    const apiUrl = `https://ncaa-api.henrygd.me/scoreboard/${sport}/d1/${targetDate}/all-conf`;
     console.log(`🌍 Fetching NCAA games from for ${targetDate}: ${apiUrl}`);
 
     try {

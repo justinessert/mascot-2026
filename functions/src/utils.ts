@@ -8,7 +8,13 @@ const reverseSpecialNcaaNames: Record<string, string> = Object.fromEntries(
 export function transformTeamName(teamName: string, year: string, gender?: "men" | "women"): string {
   if (!teamName) return "";
 
-  teamName = firstFourMapping[year][teamName] || teamName;
+  if (gender) {
+    teamName = firstFourMapping[year]?.[gender]?.[teamName] || teamName;
+  } else {
+    teamName = firstFourMapping[year]?.["men"]?.[teamName] || 
+               firstFourMapping[year]?.["women"]?.[teamName] || 
+               teamName;
+  }
 
   // Convert using special mapping if exists
   const mappedName = specialNcaaNames[teamName] || teamName;

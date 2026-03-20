@@ -110,10 +110,22 @@ function buildMappings(bracketData) {
         regionGames[regionName][roundName].push({ contestId, bracketId });
     }
 
-    // Sort games within each round by bracketId (gives standard bracket order)
+    // Sort games within each round by top seed
+    function getTopSeed(bracketId) {
+        const roundDigit = Math.floor(bracketId / 100);
+        if (roundDigit === 2) {
+            return [1, 8, 5, 4, 6, 3, 7, 2][(bracketId - 1) % 8];
+        } else if (roundDigit === 3) {
+            return [1, 4, 3, 2][(bracketId - 1) % 4];
+        } else if (roundDigit === 4) {
+            return [1, 2][(bracketId - 1) % 2];
+        }
+        return bracketId;
+    }
+
     for (const rounds of Object.values(regionGames)) {
         for (const gameList of Object.values(rounds)) {
-            gameList.sort((a, b) => a.bracketId - b.bracketId);
+            gameList.sort((a, b) => getTopSeed(a.bracketId) - getTopSeed(b.bracketId));
         }
     }
 

@@ -636,7 +636,7 @@
                 "richmond_or_nebraska": "nebraska",
                 "missouri_state_or_sf_austin": "missouri_state",
                 "arizona_state_or_virginia": "arizona_state_or_virginia",
-                "southern_or_samford": "southern_or_samford"
+                "southern_or_samford": "southern"
             },
             "cutoffTime": "2026-03-20T18:00:00.000Z",
             "selectionSundayTime": "2026-03-16T00:00:00.000Z"

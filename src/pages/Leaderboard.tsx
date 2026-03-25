@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { mensTournaments, womensTournaments } from '../constants/bracketData';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, DocumentData } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -105,6 +106,13 @@ function Leaderboard(): React.ReactElement {
         const cutoff = getCutoffTime();
         return !!cutoff && new Date() >= cutoff;
     }, [getCutoffTime]);
+
+    const isOtherGenderPastCutoff = useCallback((): boolean => {
+        const otherGender = selectedGender === 'M' ? 'W' : 'M';
+        const tournaments = otherGender === 'W' ? womensTournaments : mensTournaments;
+        const config = tournaments[selectedYear];
+        return !!config?.cutoffTime && new Date() >= config.cutoffTime;
+    }, [selectedGender, selectedYear]);
 
     const isOwnBracket = useCallback((bracketId: string, contributorUids?: string[]): boolean => {
         return !!user && (bracketId === user.uid || (contributorUids || []).includes(user.uid));
@@ -325,11 +333,11 @@ function Leaderboard(): React.ReactElement {
                     <button className="close-btn" onClick={() => setShowLoginBanner(false)}>×</button>
                 </div>
             )}
-            {user && !userBracket && !brackets.some(b => b.contributorUids?.includes(user.uid)) && showPublishBanner && !loading && selectedLeaderboardId === null && (
+            {user && !userBracket && !brackets.some(b => b.contributorUids?.includes(user.uid)) && showPublishBanner && !loading && selectedLeaderboardId === null && !isPastCutoff() && (
                 <CreateOtherBracketPrompt targetGender={selectedGender} onCreate={() => navigate('/bracket/pick')} onDismiss={() => setShowPublishBanner(false)} message="Create & publish a bracket to get on the leaderboard" />
             )}
             {/* Cross-Gender Promotion - only if top prompt is NOT visible */}
-            {user && !(user && !userBracket && !brackets.some(b => b.contributorUids?.includes(user.uid)) && showPublishBanner && selectedLeaderboardId === null) && (
+            {user && !isOtherGenderPastCutoff() && !(user && !userBracket && !brackets.some(b => b.contributorUids?.includes(user.uid)) && showPublishBanner && selectedLeaderboardId === null && !isPastCutoff()) && (
                 <CreateOtherBracketPrompt
                     targetGender={selectedGender === 'M' ? 'W' : 'M'}
                     onCreate={handleCreateOtherGender}

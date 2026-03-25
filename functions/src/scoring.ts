@@ -4,6 +4,8 @@ import { roundOrders } from "./constants";
 import { db } from "./firebase";
 
 // 🎯 **Calculate Score for a Single Bracket**
+const VERBOSE = true;
+
 function calculateBracketScore(
     bracket: any,
     gameMappings: any,
@@ -24,7 +26,9 @@ function calculateBracketScore(
             throw new Error(`Missing bracket data for region: ${region} in bracket ${bracket}`);
         }
 
-        for (const [roundKey, gameIds] of Object.entries(rounds as Record<string, string[]>)) {
+        for (const [roundKey, gameIds] of Object.entries(rounds as Record<string, string[]>).sort(([a], [b]) => {
+            return parseInt(a.split("_")[1]) - parseInt(b.split("_")[1]);
+        })) {
             let regionRoundScore = 0;
             let regionRoundMaxScore = 0;
             const roundNumber = parseInt(roundKey.split("_")[1]); // Extracts the round number
@@ -38,24 +42,42 @@ function calculateBracketScore(
                 const userSelectionTransform = transformTeamName(userSelection["name"], year, gender);
 
                 const gameId = gameIds[i];
-                if (!gameId || !ncaaGameResults[gameId]) {
+                const gameResult = gameId ? ncaaGameResults[gameId] : null;
+                if (!gameId || !gameResult || !gameResult.winner) {
+                    // Game not yet played or still in progress (winner is null)
                     // Check if userSelectionTransform is in losing_teams
                     if (!losing_teams.includes(userSelectionTransform)) {
                         // Add to regionRoundMaxScore
                         regionRoundMaxScore += pointsPerWin;
                     }
-                    continue; // Skip if no game mapping or game data
+                    if (VERBOSE) {
+                        console.log(
+                            `[${bracket.bracketData.name}] ${region} R${roundNumber} | ` +
+                            `Game not played | Pick: ${userSelection["name"]} | Points: N/A`
+                        );
+                    }
+                    continue; // Skip if no game mapping, game data, or winner not determined
                 };
 
-                const correctWinner = ncaaGameResults[gameId].winner;
+                const correctWinner = gameResult.winner;
 
                 // Get Loser and add to list of losers
-                const loser = ncaaGameResults[gameId].loser;
+                const loser = gameResult.loser;
                 losing_teams.push(loser);
 
-                if (userSelectionTransform === correctWinner) {
+                const awarded = userSelectionTransform === correctWinner;
+                if (awarded) {
                     regionRoundScore += pointsPerWin;
                     regionRoundMaxScore += pointsPerWin;
+                }
+
+                if (VERBOSE) {
+                    const gameScore = `${gameResult.homeTeam} ${gameResult.homeScore} - ${gameResult.awayTeam} ${gameResult.awayScore}`;
+                    console.log(
+                        `[${bracket.bracketData.name}] ${region} R${roundNumber} | ` +
+                        `${gameScore} | Pick: ${userSelection["name"]} (${userSelectionTransform}) | ` +
+                        `${awarded ? "✅ +" + pointsPerWin : "❌ +0"}`
+                    );
                 }
             }
             score += regionRoundScore;
@@ -92,6 +114,13 @@ function buildCorrectBracket(
         lastUpdated: new Date()
     };
 
+    let totalGames = 0;
+    let playedGames = 0;
+
+    if (VERBOSE) {
+        console.log(`[buildCorrectBracket] Starting build with ${Object.keys(gameMappings).length} regions`);
+    }
+
     // Sort regions so final_four is at the end (matching calculateBracketScore)
     for (const [region, rounds] of Object.entries(gameMappings).sort(([regionA], [regionB]) => {
         if (regionA === "final_four") return 1;
@@ -100,9 +129,19 @@ function buildCorrectBracket(
     })) {
         correctBracket.regions[region] = {};
 
-        for (const [roundKey, gameIds] of Object.entries(rounds)) {
+        if (VERBOSE) {
+            console.log(`[buildCorrectBracket] --- Region: ${region} (${Object.keys(rounds).length} rounds) ---`);
+        }
+
+        for (const [roundKey, gameIds] of Object.entries(rounds).sort(([a], [b]) => {
+            return parseInt(a.split("_")[1]) - parseInt(b.split("_")[1]);
+        })) {
             const roundNumber = parseInt(roundKey.split("_")[1]);
             const userRoundOrder = roundOrders[roundNumber];
+
+            if (VERBOSE) {
+                console.log(`[buildCorrectBracket] ${region} ${roundKey} | ${gameIds.length} games | gameIds: [${gameIds.join(", ")}]`);
+            }
 
             // Initialize array with correct size
             correctBracket.regions[region][roundKey] = [];
@@ -112,6 +151,7 @@ function buildCorrectBracket(
                 // This matches the logic in calculateBracketScore
                 const gameIdx = region === "final_four" ? i : userRoundOrder[i];
                 const gameId = gameIds[i];
+                totalGames++;
 
                 if (!gameId || !ncaaGameResults[gameId]) {
                     // Game not yet played - push placeholder at the mapped index position
@@ -124,15 +164,22 @@ function buildCorrectBracket(
                         loserScore: null,
                         gameId: gameId || ""
                     };
+                    if (VERBOSE) {
+                        console.log(
+                            `[buildCorrectBracket] ${region} R${roundNumber} i=${i} -> idx=${gameIdx} | ` +
+                            `Game not played (gameId: ${gameId || "none"})`
+                        );
+                    }
                     continue;
                 }
 
+                playedGames++;
                 const game = ncaaGameResults[gameId];
                 const homeScore = parseInt(game.homeScore) || 0;
                 const awayScore = parseInt(game.awayScore) || 0;
                 const loser = game.winner === game.homeTeam ? game.awayTeam : game.homeTeam;
 
-                correctBracket.regions[region][roundKey][gameIdx] = {
+                const entry: CorrectGame = {
                     winner: reverseTransformTeamName(game.winner) || "",
                     loser: reverseTransformTeamName(loser) || "",
                     team1: reverseTransformTeamName(game.homeTeam) || "",  // Home team in slot 0
@@ -141,8 +188,21 @@ function buildCorrectBracket(
                     loserScore: game.winner === game.homeTeam ? awayScore : homeScore,
                     gameId: gameId
                 };
+                correctBracket.regions[region][roundKey][gameIdx] = entry;
+
+                if (VERBOSE) {
+                    console.log(
+                        `[buildCorrectBracket] ${region} R${roundNumber} i=${i} -> idx=${gameIdx} | ` +
+                        `✅ ${entry.winner} (${entry.winnerScore}) def. ${entry.loser} (${entry.loserScore}) | ` +
+                        `gameId: ${gameId}`
+                    );
+                }
             }
         }
+    }
+
+    if (VERBOSE) {
+        console.log(`[buildCorrectBracket] Complete: ${playedGames}/${totalGames} games played`);
     }
 
     return correctBracket;

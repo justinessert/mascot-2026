@@ -41,7 +41,7 @@ export const scheduledUpdateNCAAGames = onSchedule(
         const currentHour = now.hour; // 0-23 format
         const currentDay = now.weekday; // 1 (Monday) - 7 (Sunday)
 
-        const isValidDay = [4, 5, 6, 7].includes(currentDay); // Thursday-Sunday
+        const isValidDay = [1, 4, 5, 6, 7].includes(currentDay); // Thursday-Monday
         const isValidHour = currentHour >= 12 && currentHour < 24; // 12pm - 11:59pm
 
         if (!isValidDay || !isValidHour) {

@@ -55,7 +55,7 @@ describe('Leaderboard Page', () => {
         vi.spyOn(TournamentHook, 'useTournament').mockReturnValue({
             selectedYear: 2026,
             selectedGender: 'M',
-            getCutoffTime: () => new Date('2026-03-20'), // Future date
+            getCutoffTime: () => new Date('2099-03-20'), // Future date
             hasBracketData: () => true,
             getSelectionSundayTime: () => new Date()
         } as any);
@@ -278,6 +278,53 @@ describe('Leaderboard Page', () => {
         await waitFor(() => expect(screen.queryByText(/loading/i)).not.toBeInTheDocument());
 
         // Should NOT see the prompt
+        expect(screen.queryByText(/Create & publish a bracket/i)).not.toBeInTheDocument();
+    });
+
+    it('hides create prompt when past tournament cutoff', async () => {
+        // User logged in
+        vi.spyOn(AuthHook, 'useAuth').mockReturnValue({
+            user: { uid: 'my-uid' }
+        } as any);
+
+        // Cutoff is in the past
+        vi.spyOn(TournamentHook, 'useTournament').mockReturnValue({
+            selectedYear: 2026,
+            selectedGender: 'M',
+            getCutoffTime: () => new Date('2020-01-01T00:00:00Z'), // Past date
+            hasBracketData: () => true,
+            getSelectionSundayTime: () => new Date()
+        } as any);
+
+        // User has NOT published
+        vi.spyOn(LeaderboardService, 'hasPublishedBracket').mockResolvedValue(false);
+
+        const mockData = [
+            {
+                id: '1',
+                data: () => ({
+                    bracketId: 'other-uid',
+                    bracketName: 'Other Bracket',
+                    score: 100,
+                    contributorUids: []
+                })
+            }
+        ];
+
+        mockGetDocs.mockResolvedValue({
+            forEach: (cb: any) => mockData.forEach(cb)
+        });
+
+        render(
+            <MemoryRouter>
+                <Leaderboard />
+            </MemoryRouter>
+        );
+
+        // Wait for loading to finish
+        await waitFor(() => expect(screen.queryByText(/loading/i)).not.toBeInTheDocument());
+
+        // Should NOT see the prompt since cutoff has passed
         expect(screen.queryByText(/Create & publish a bracket/i)).not.toBeInTheDocument();
     });
 });

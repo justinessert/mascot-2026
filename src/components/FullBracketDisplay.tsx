@@ -7,6 +7,7 @@
 
 import { Link } from 'react-router-dom';
 import { formatTeamName, getMascotName } from '../constants/nicknames';
+import { transformTeamName } from '../utils/teamNameTransform';
 import { mensTournaments } from '../constants/bracketData';
 import BracketSegment from './BracketSegment';
 import Matchup from './Matchup';
@@ -134,6 +135,26 @@ function FullBracketDisplay({
     const semiFinal2Correct = getFinalFourCorrectAnswer(1, 1);
     const championshipCorrect = getFinalFourCorrectAnswer(2, 0);
 
+    // Calculate eliminated teams once
+    const getEliminatedTeams = () => {
+        if (!correctBracket || !showCorrectAnswers) return new Set<string>();
+        const eliminated = new Set<string>();
+        
+        for (const region of Object.values(correctBracket.regions)) {
+            for (const round of Object.values(region)) {
+                for (const game of round) {
+                    if (game.loser) {
+                        eliminated.add(transformTeamName(game.loser));
+                    }
+                }
+            }
+        }
+        
+        return eliminated;
+    };
+    
+    const eliminatedTeams = getEliminatedTeams();
+
     return (
         <div className="full-bracket-container">
             {/* Header */}
@@ -207,6 +228,7 @@ function FullBracketDisplay({
                                 regionName={regionName}
                                 correctAnswers={correctBracket}
                                 showCorrectAnswers={showCorrectAnswers}
+                                eliminatedTeams={eliminatedTeams}
                             />
                         </div>
                     ))}
@@ -245,6 +267,7 @@ function FullBracketDisplay({
                                     bottomTeamScore={semiFinal1Correct?.loserScore}
                                     showCorrectAnswers={showCorrectAnswers}
                                     userPickedWinner={getFinalFourUserPickedWinner(1, 0)}
+                                    eliminatedTeams={eliminatedTeams}
                                 />
                             </div>
                             <div className="final-four-matchup">
@@ -260,6 +283,7 @@ function FullBracketDisplay({
                                     bottomTeamScore={championshipCorrect?.loserScore}
                                     showCorrectAnswers={showCorrectAnswers}
                                     userPickedWinner={getFinalFourUserPickedWinner(2, 0)}
+                                    eliminatedTeams={eliminatedTeams}
                                 />
                             </div>
                             <div className="final-four-matchup">
@@ -275,6 +299,7 @@ function FullBracketDisplay({
                                     bottomTeamScore={semiFinal2Correct?.loserScore}
                                     showCorrectAnswers={showCorrectAnswers}
                                     userPickedWinner={getFinalFourUserPickedWinner(1, 1)}
+                                    eliminatedTeams={eliminatedTeams}
                                 />
                             </div>
                         </div>
@@ -292,6 +317,7 @@ function FullBracketDisplay({
                                 regionName={regionName}
                                 correctAnswers={correctBracket}
                                 showCorrectAnswers={showCorrectAnswers}
+                                eliminatedTeams={eliminatedTeams}
                             />
                         </div>
                     ))}

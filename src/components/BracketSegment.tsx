@@ -26,6 +26,7 @@ interface BracketSegmentProps {
     regionName?: string;
     correctAnswers?: CorrectBracket | null;
     showCorrectAnswers?: boolean;
+    eliminatedTeams?: Set<string>;
 }
 
 function BracketSegment({
@@ -34,7 +35,8 @@ function BracketSegment({
     showRoundHeaders = false,
     regionName,
     correctAnswers,
-    showCorrectAnswers = false
+    showCorrectAnswers = false,
+    eliminatedTeams
 }: BracketSegmentProps): React.ReactElement {
     if (!bracket || bracket.length === 0) {
         return <div className="bracket-segment">No bracket data</div>;
@@ -101,6 +103,7 @@ function BracketSegment({
                                         bottomTeamScore={correctData?.loserScore}
                                         showCorrectAnswers={showCorrectAnswers}
                                         userPickedWinner={userPickedWinner || null}
+                                        eliminatedTeams={eliminatedTeams}
                                     />
                                 </div>
                             );

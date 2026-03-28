@@ -29,6 +29,7 @@ interface MatchupProps {
     bottomTeamScore?: number | null; // Score for loser
     showCorrectAnswers?: boolean;  // Toggle correct answer display
     userPickedWinner?: Team | null; // The team the user picked to win this matchup
+    eliminatedTeams?: Set<string>; // Set of team names that have been eliminated
 }
 
 /**
@@ -60,7 +61,8 @@ function Matchup({
     topTeamScore,
     bottomTeamScore,
     showCorrectAnswers = false,
-    userPickedWinner
+    userPickedWinner,
+    eliminatedTeams
 }: MatchupProps): React.ReactElement {
 
     /**
@@ -81,12 +83,27 @@ function Matchup({
         const score = slotPosition === 'top' ? (topTeamScore ?? null) : (bottomTeamScore ?? null);
 
         // Not showing correct answers - no special state
-        if (!showCorrectAnswers || !correctWinner) {
+        if (!showCorrectAnswers || correctWinner == null) {
             return { state: null, userPick, actualTeam: null, isWinner: false, score: null, pickedToWin: false };
         }
 
         // Game not yet played (winner is empty string)
         if (correctWinner === '') {
+            let isEliminated = false;
+            // Check if user's pick has already been eliminated in a previous round
+            if (userPick && eliminatedTeams?.has(transformTeamName(userPick))) {
+                isEliminated = true;
+            }
+
+            if (isEliminated) {
+                // User picked a team that has already been eliminated. Mark it as wrong-team.
+                let pickedThisWrongTeamToWin = false;
+                if (userPickedWinner && userPick) {
+                    pickedThisWrongTeamToWin = transformTeamName(userPickedWinner.name) === transformTeamName(userPick);
+                }
+                return { state: 'wrong-team', userPick, actualTeam, isWinner: false, score: null, pickedToWin: pickedThisWrongTeamToWin };
+            }
+
             return { state: 'pending', userPick, actualTeam, isWinner: false, score: null, pickedToWin: false };
         }
 
